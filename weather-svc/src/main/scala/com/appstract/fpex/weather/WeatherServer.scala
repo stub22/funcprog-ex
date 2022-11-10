@@ -17,21 +17,23 @@ trait WeatherServer {
 	// TODO:  Move port number into a field
 
 	def run: IO[Nothing] = {
-		val jokeSupplierFactory = new JokeSupplierFactory {}
-		val greetingSupplierFactory = GreetingSupplierSingleton
+		val jokeSuppFactory = new JokeSupplierFactory {}
+		val greetingSuppFactory = GreetingSupplierSingleton
+		val forecastSuppFactory = new ForecastSupplierFactory {}
 
 		for {
 			client <- EmberClientBuilder.default[IO].build
-			grtSupplier: GreetingSupplier = greetingSupplierFactory.impl
-			jokeSupplier: JokeSupplier = jokeSupplierFactory.impl(client)
-
+			grtSupp: GreetingSupplier = greetingSuppFactory.getImpl
+			jokeSupp: JokeSupplier = jokeSuppFactory.getImpl(client)
+			forecastSupp : ForecastSupplier = forecastSuppFactory.getImpl(client)
 			// Combine Service Routes into an HttpApp.
 			// Can also be done via a Router if you want to extract a segments not checked in the underlying routes.
 
 			// From Cats SemigroupK.Ops:  def <+>(y: F[A]): F[A] = typeClassInstance.combineK[A](self, y)
 			httpApp: Kleisli[IO, Request[IO], Response[IO]] = (
-					WeatherRoutes.greetingRoutes(grtSupplier) <+>
-					WeatherRoutes.jokeRoutes(jokeSupplier)
+					WeatherRoutes.greetingRoutes(grtSupp) <+>
+					WeatherRoutes.jokeRoutes(jokeSupp) <+>
+					WeatherRoutes.forecastRoutes(forecastSupp, false)
 				).orNotFound
 
 			// Insert logging "middleware"

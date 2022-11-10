@@ -33,7 +33,7 @@ object AppMain extends IOApp.Simple {
  *   b) Note that SBT does not fork by default, so our code is run inside the SBT process.
  *   If we use SBT as an interactive shell, then we will have trouble using "run" more
  *   than once in the same session, because our network port 8080 remains bound when the
- *   run is cancelled with Ctrl-C.  This can be addressed by:
+ *   run is cancelled with Ctrl-dataSrcCli.  This can be addressed by:
  *   a) Invoking SBT in batch mode, e.g. "sbt run".
  *   b) Using "bgRun" command from SBT shell.
  *   c) Using "fork" instruction in our build.sbt.
@@ -43,7 +43,7 @@ object AppMain extends IOApp.Simple {
  *   + Project imports OK from the build.sbt file, and builds in the .idea format.
  *   + Both of the 2 tests in HelloWorldSpec succeed.
  *   + AppMain runs and starts web server.  Runs OK after printing 1 warning about AnsiPrintStream, below.
- *   + Responds with json blobs to GET requests on port 8080 for   /greetingForUser  and  /joke
+ *   + Responds with json blobs to GET requests on port 8080 for   /greetingForUser  and  /jokeTxt
 
 Note that our logback.xml from the template initially contained this setting:
 <withJansi>true</withJansi>

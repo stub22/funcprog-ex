@@ -40,9 +40,9 @@ class GreetingRouteSpec extends CatsEffectSuite {
 		val log: Logger = log4s.getLogger
 		val greetUriPath = s"/${OP_NM_GREET}/${unm}"
 		val greetUri = Uri.unsafeFromString(greetUriPath)
-		log.info(s"GreetingRouteSpec.execGreetingOp made greetUri: ${greetUri}")
+		log.info(s"GreetingRouteSpec.invokeGreetingRoute made greetUri: ${greetUri}")
 		val requestIO: Request[IO] = Request[IO](Method.GET, greetUri) //  uri"/greetingForUser/world")
-		val greetSupp: GreetingSupplier = GreetingSupplierSingleton.impl
+		val greetSupp: GreetingSupplier = GreetingSupplierSingleton.getImpl
 
 		val route: HttpRoutes[IO] = if (flg_useOther) {
 			WeatherRoutes.otherGreetingRoutes(greetSupp)

@@ -27,12 +27,12 @@ object JsonEnc_Greeting {
 		jsonEncoderOf[IO, Msg_Greeting]
 }
 
-// Here we are using a singleton, to get the convenience of sharing some constants.
+// Here we are using a singleton, to getOneJokeIO the convenience of sharing some constants.
 // However in general we use traits for factories.
 trait GreetingSupplierFactory {
 	val GREETING_TEXT_PREFIX = "Welcome to WeatherTown, "
-	def impl: GreetingSupplier = new GreetingSupplier {
-		def greetingForUser(usrNm: Msg_UserJoined): IO[Msg_Greeting] =
+	def getImpl: GreetingSupplier = new GreetingSupplier {
+		override def greetingForUser(usrNm: Msg_UserJoined): IO[Msg_Greeting] =
 			Msg_Greeting(GREETING_TEXT_PREFIX + usrNm.nameTxt).pure[IO]
 	}
 }
