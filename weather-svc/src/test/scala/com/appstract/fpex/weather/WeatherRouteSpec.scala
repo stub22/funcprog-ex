@@ -10,7 +10,7 @@ import org.log4s
 import org.log4s.Logger
 
 class WeatherRouteSpec extends CatsEffectSuite {
-	private val myRoutes = new WeatherRoutes {}
+	private val myRoutes = new AppWebRoutes {}
 
 	private val myLog: Logger = log4s.getLogger
 
@@ -37,7 +37,7 @@ class WeatherRouteSpec extends CatsEffectSuite {
 	}
 
 	private def mkWqryUrlForLatLong(latTxt : String, lonTxt : String) : String = {
-		s"/${myRoutes.OP_NAME_WEATHER_WQRY}?lat=${latTxt}&lon=${lonTxt}"
+		s"/${myRoutes.OP_NAME_WEATHER_WQUERY}?lat=${latTxt}&lon=${lonTxt}"
 	}
 
 	private def applyWeatherRouteAndAssertStatusOK(weatherUrlPath : String) : IO[Unit] = {
@@ -64,7 +64,7 @@ class WeatherRouteSpec extends CatsEffectSuite {
 		val routeResource: Resource[IO, HttpRoutes[IO]] = for {
 			cli <- embCliRsrc
 			forecastSupp: WeatherReportSupplier = new WeatherReportSupplierImpl(cli)
-			route: HttpRoutes[IO] = myRoutes.reportRoutes(forecastSupp)
+			route: HttpRoutes[IO] = myRoutes.weatherReportRoutes(forecastSupp)
 		} yield(route)
 		// Now we have a potential-route wrapped in a resource.
 		// When the responseIO is eventually run, it will build and use the route just one time, and then release it.

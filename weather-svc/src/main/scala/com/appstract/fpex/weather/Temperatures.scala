@@ -1,5 +1,9 @@
 package com.appstract.fpex.weather
 
+/**
+ * This file includes both API and Impl for a feature that interprets temperatures.
+ */
+
 // Internal API type
 trait TemperatureInterpreter {
 	// Assign a descriptive label ("hot", "cold", "moderate") for a given temperature, ocurring in either daytime or nightime.
@@ -15,11 +19,11 @@ case object Celsius extends TempScale
 case object Farenheit extends TempScale
 
 // Use Option.None to indicate that a range is open on the minTemp or maxTemp side.
-// If a range held None for both min and max, then the range would logically contain ANY numeric temperature value.
+// If a range specifies None for both min and max, then the range would logically contain ANY numeric temperature value.
 // We use Floats here for a balance of convenient brevity and generality.
 private case class TempRange(name : String, scale : TempScale, minTemp_opt : Option[Float], maxTemp_opt : Option[Float]) {
 	def containsTemp(temp : Float) : Boolean = {
-		minTemp_opt.fold(true)(temp > _) && maxTemp_opt.fold(true)(temp < _)
+		minTemp_opt.fold(true)(temp >= _) && maxTemp_opt.fold(true)(temp < _)
 	}
 }
 

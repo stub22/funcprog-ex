@@ -39,11 +39,7 @@ trait WeatherReportSupplier {
 
 	type WReportOrErr = Either[Msg_WeatherError, Msg_WeatherReport]
 
-	def getFakeWeather : IO[WReportOrErr]
-
-	def fetchWeatherForFixedLocation : IO[WReportOrErr]
-
 	def fetchWeatherForLatLonPairTxt(latLonPairTxt : String) : IO[WReportOrErr]
 
-	def fetchWeatherForLatLon(latTxt : String, longTxt : String) : IO[WReportOrErr]
+	def fetchWeatherForLatLon(latTxt : String, lonTxt : String) : IO[WReportOrErr]
 }

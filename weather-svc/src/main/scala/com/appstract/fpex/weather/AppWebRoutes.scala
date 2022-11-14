@@ -6,23 +6,22 @@ import org.http4s.dsl.io._
 import org.log4s
 import org.log4s.Logger
 
-trait WeatherRoutes {
+trait AppWebRoutes {
 	private val myLog: Logger = log4s.getLogger
 
 	// Our frontend HTTP operation names:
+	val OP_NAME_WEATHER_WPATH = "check-weather-wpath"  	// WPATH means "with path argument"
+	val OP_NAME_WEATHER_WQUERY = "check-weather-wquery" // WQUERY means "with query arguments"
 
-	val OP_NAME_WEATHER_WPATH = "check-weather-wpath"
-	val OP_NAME_WEATHER_WQRY = "check-weather-wquery"
-
-	// Lat,Lon may come in as query parameters.
+	// Lat,Lon may come in as query parameters. See WQUERY route below.
 	private object QPM_Latitude extends QueryParamDecoderMatcher[String]("lat")
 	private object QPM_Longitude extends QueryParamDecoderMatcher[String]("lon")
 
-	def reportRoutes(frcstSupp: WeatherReportSupplier): HttpRoutes[IO] = {
+	def weatherReportRoutes(frcstSupp: WeatherReportSupplier): HttpRoutes[IO] = {
 
-		// We support two different forms of latitude,longitude.
-		// 1) As a comma separated string in the URL path
-		// 2) As two separate URL query parameters
+		// We support two different input forms for latitude,longitude.
+		// 1) "WPATH" As a comma separated string in the URL path.  This is the form used by the weather.gov backend.
+		// 2) "WQUERY" As two separate URL query parameters.
 		HttpRoutes.of[IO] {
 			case GET -> Root / OP_NAME_WEATHER_WPATH / latLonTxt => {
 				// Expects a latLon text pair in the request path, in form compatible with weather.gov/points service,
@@ -32,8 +31,8 @@ trait WeatherRoutes {
 					resp: Response[IO] <- weatherOutputMsgToWebResponse(wrprtOrErr)
 				} yield resp
 			}
-			case GET -> Root / OP_NAME_WEATHER_WQRY :? QPM_Latitude(latTxt) +& QPM_Longitude(lonTxt) => {
-				// Expects two separate query parameters.
+			case GET -> Root / OP_NAME_WEATHER_WQUERY :? QPM_Latitude(latTxt) +& QPM_Longitude(lonTxt) => {
+				// Expects two separate query parameters, which we interpret only as Strings, so far.
 				for {
 					wrprtOrErr <- frcstSupp.fetchWeatherForLatLon(latTxt, lonTxt)
 					resp: Response[IO] <- weatherOutputMsgToWebResponse(wrprtOrErr)

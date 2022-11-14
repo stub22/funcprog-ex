@@ -19,7 +19,7 @@ trait AppServerBuilder {
 
 	def makeAppServerIO: IO[Nothing] = {
 		myLog.info(s"AppServer.makeAppServerIO BEGIN")
-		val srvrRsrc = makeServerResource
+		val srvrRsrc = makeServerResource()
 		myLog.info(s"AppServer.makeAppServerIO built server resource: ${srvrRsrc}")
 		val srvrIO = srvrRsrc.useForever
 		myLog.info(s"AppServer.makeAppServerIO returning srvrIO=${srvrIO}")
@@ -40,9 +40,9 @@ trait AppServerBuilder {
 	}
 
 	private def makeAppRoutesKleisli(dataSrcCli: => Client[IO]) : Kleisli[IO, Request[IO], Response[IO]] = {
-		val weatherRoutes = new WeatherRoutes{}
+		val weatherRoutes = new AppWebRoutes{}
 		val forecastSupp : WeatherReportSupplier = new WeatherReportSupplierImpl(dataSrcCli)
-		val weatherRoutesK = weatherRoutes.reportRoutes(forecastSupp)
+		val weatherRoutesK = weatherRoutes.weatherReportRoutes(forecastSupp)
 		val httpRoutesKleisli: Kleisli[IO, Request[IO], Response[IO]] = weatherRoutesK.orNotFound
 		httpRoutesKleisli
 	}

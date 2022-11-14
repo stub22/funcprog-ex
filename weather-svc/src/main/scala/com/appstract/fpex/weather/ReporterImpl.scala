@@ -13,18 +13,6 @@ class WeatherReportSupplierImpl(dataSrcCli: => Client[IO]) extends WeatherReport
 
 	private lazy val myInterp : TemperatureInterpreter = new TempInterpImpl
 
-	override def getFakeWeather: IO[WReportOrErr] = {
-		val latLong = "FAKE_LAT,FAKE_LONG"
-		val fakeForecastMsg = Msg_WeatherReport(MTYPE_REPORT, latLong, "FAKE_SUMMARY", "FAKE_TEMP")
-		val rprtIO = IO.pure(fakeForecastMsg)
-		wrioToWROEIO(rprtIO, latLong)
-	}
-
-	override def fetchWeatherForFixedLocation: IO[WReportOrErr] = {
-		val fixedLatLonPairTxt = "39.7456,-97.0892"
-		fetchWeatherForLatLonPairTxt(fixedLatLonPairTxt)
-	}
-
 	override def fetchWeatherForLatLon(latTxt : String, lonTxt : String) : IO[WReportOrErr] = {
 		myLog.info(s"fetchWeatherForLatLon(lat=${latTxt}, lon=${lonTxt}")
 		// TODO:  Validate input values

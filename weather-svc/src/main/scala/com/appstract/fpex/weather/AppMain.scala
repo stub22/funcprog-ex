@@ -28,10 +28,10 @@ object AppMain extends IOApp.Simple {
  *   indicating that our Logback 1.4.1 dependency requires at least JDK 11.
  *
  *   2) sbt 1.7.3 with GraalVM JDK 11 (Version 22.3.0)
- *   a) Builds and runs with same AnsiConsole issue as the IntelliJ setup #3 below.
+ *   A) Builds and runs with same AnsiConsole issue as the IntelliJ setup #3 below.
  *   Setting withJansi to false clears this issue.
  *
- *   b) Note that SBT does not fork by default, so by default will run our code INSIDE the SBT process.
+ *   B) Note that SBT does not fork by default, so by default will run our code INSIDE the SBT process.
  *   If we use SBT as an interactive shell, then we will have trouble using our ".run" more
  *   than once in the same session, because our network port 8080 remains bound when the
  *   run is cancelled with Ctrl-C.  This issue can be addressed by running in one of these other ways:
@@ -41,10 +41,8 @@ object AppMain extends IOApp.Simple {
  *   https://www.scala-sbt.org/1.x/docs/Forking.html
  *
  *   3) IntelliJ JetBrains IDE with GraalVM JDK 11, as well as Scala and SBT plugins.
- *   + Project imports OK from the build.sbt file, and builds in the .idea format.
- *   + Both of the 2 tests in HelloWorldSpec succeed.
- *   + AppMain runs and starts web server.  Runs OK after printing 1 warning about AnsiPrintStream, below.
- *   + Responds with json blobs to GET requests on port 8080 for   /greetingForUser  and  /jokeTxt
+ *   Project imports OK from the build.sbt file, and builds in the .idea format.
+ *   Can launch "AppMain" and "WeatherRouteSpec" using "Run" context menu.
 
 Note that our logback.xml from the template initially contained this setting:
 <withJansi>true</withJansi>
