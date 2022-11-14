@@ -1,25 +1,26 @@
-package com.appstract.fpex.weather
+package com.appstract.fpex.extra
 
-import munit.CatsEffectSuite
 import cats.effect.IO
+import com.appstract.fpex.weather.Msg_WeatherError
+import munit.CatsEffectSuite
 import org.http4s.{HttpRoutes, Method, Request, Response, Status, Uri}
 import org.log4s
 import org.log4s.Logger
 
-import scala.annotation.nowarn
 
 class GreetingRouteSpec extends CatsEffectSuite {
+	val myRoutes = new ExtraRoutes {}
 	val USERNAME_01 = "gilligan"
-	val OP_NM_GREET = WeatherRoutes.OP_NAME_GREET
+	val OP_NM_GREET = myRoutes.OP_NAME_GREET
 	val expectedMsgFname = JsonEnc_Greeting.FIELD_NAME_MSG_TXT // "messageTxt"
 
 	test("Regular greetingRoutes returns status code 200") {
 		val greetResponseIO = invokeGreetingRoute(USERNAME_01, false)
-		assertIO(greetResponseIO.map(_.status) ,Status.Ok)
+		assertIO(greetResponseIO.map(_.status), Status.Ok)
 	}
 	test("otherGreetingRoutes returns status code 200") {
 		val greetResponseIO = invokeGreetingRoute(USERNAME_01, true)
-		assertIO(greetResponseIO.map(_.status) ,Status.Ok)
+		assertIO(greetResponseIO.map(_.status), Status.Ok)
 	}
 	test("Regular greetingRoutes returns expected greeting message") {
 		val unm = USERNAME_01
@@ -34,6 +35,35 @@ class GreetingRouteSpec extends CatsEffectSuite {
 		val expectedRespTxt = mkExpectedResponseTxt(unm)
 		assertIO(greetMsgIO, expectedRespTxt)
 	}
+	test("Always raiseError") {
+		import cats.implicits._
+		// Create an IO[unit] from an exception
+		val boom: IO[Unit] = IO.raiseError(new Exception("boom"))
+		val failedToMakeInt: IO[Int] = IO.raiseError[Int](new Exception("badNum"))
+		/*
+
+https://softwaremill.com/practical-guide-to-error-handling-in-scala-cats-and-cats-effect/
+
+orElse
+Replaces error regardless of its error type with the given value.  The provided value has to be wrapped into F and
+can be a failure as well, so it can be used to replace an existing error with the given one.
+def   orElse(other: ⇒ F[A])
+		 */
+		val x: IO[Int] = failedToMakeInt.orElse(IO.pure(-100))
+
+// 		val zjjz = failedToMakeInt.redeem()
+
+
+
+		val other: IO[Int] = IO.raiseError[Int](new Exception("badNum")).handleError(t => {
+			-100
+		})
+
+
+
+		boom
+		failedToMakeInt
+	}
 
 	private[this] def invokeGreetingRoute(unm : String, flg_useOther : Boolean) : IO[Response[IO]] = {
 		// Builds the response-out effect for a simulated request-in message.
@@ -45,9 +75,9 @@ class GreetingRouteSpec extends CatsEffectSuite {
 		val greetSupp: GreetingSupplier = GreetingSupplierSingleton.getImpl
 
 		val route: HttpRoutes[IO] = if (flg_useOther) {
-			WeatherRoutes.otherGreetingRoutes(greetSupp)
+			myRoutes.otherGreetingRoutes(greetSupp)
 		} else {
-			WeatherRoutes.greetingRoutes(greetSupp)
+			myRoutes.greetingRoutes(greetSupp)
 		}
 		route.orNotFound(requestIO)
 	}
@@ -61,19 +91,5 @@ class GreetingRouteSpec extends CatsEffectSuite {
 	val DQ_CHAR = '"'
 	// val DQ_STRING : String = '"'.toString
 	private def doubleQuoted(txt : String) : String =  s"${DQ_CHAR}${txt}${DQ_CHAR}"
-	/*
-	import org.http4s.implicits._
-	winds up giving us:
-	class LiteralsOps(val sc: StringContext) extends AnyVal {
-	def uri(args: Any*): Uri = macro LiteralSyntaxMacros.uri.make
-	 */
-	@nowarn("cat=unused")
-	private[this] def mkUriUsingMacro : Uri = {
-		import org.http4s.implicits._
-		val x: Uri = uri"/WRONG_IGNORE/world"
-		x
-	}
-	// typeParseResult[+A] = Either[ParseFailure, A]
-	// val URI_01: Uri = Uri.unsafeFromString(URI_TXT_01)
-	// val URI_SAFE_01: ParseResult[Uri] = Uri.fromString(URI_TXT_01)
+
 }

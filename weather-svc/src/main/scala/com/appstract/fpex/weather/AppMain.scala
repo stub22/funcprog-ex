@@ -5,22 +5,23 @@ import org.log4s
 import org.log4s.Logger
 
 object AppMain extends IOApp.Simple {
-  def run:IO[Unit] = {
-	  val logger: Logger = log4s.getLogger
-	  logger.info("AppMain.run BEGIN:  making a WeatherServer")
-	  val ws = new WeatherServer{}
-	  logger.info("AppMain.run: invoking ws.run to build the server effect")
-	  val wsr: IO[Nothing] = ws.run
-	  logger.info("AppMain.run built server IO effect: " + wsr)
-	  wsr
-  }
+	// Entry point for our cats-effect application:
+	def run:IO[Unit] = {
+		val log: Logger = log4s.getLogger
+		log.info("AppMain.run BEGIN: making AppServerBuilder")
+		val appServerBuilder = new AppServerBuilder{}
+		log.info("AppMain.run: invoking .makeAppServerIO to build a runnable server effect")
+		val appServerIO: IO[Nothing] = appServerBuilder.makeAppServerIO
+		log.info("AppMain.run built server IO effect, returning to IoApp to be executed: " + appServerIO)
+		appServerIO
+	}
 }
 
 /***
- * Work started from a skeleton project copied from this giter8 template:
+ * This code started from a skeleton project provided by this giter8 template:
  * https://github.com/http4s/http4s-io.g8
  *
- * Test results on MS Windows 10:
+ * Platform compatibility:  So far Stu has tested only on MS Windows 10, in the following configurations:
  *   1) sbt 1.7.3 and Oracle JDK 8
  *   We can build and launch the app with this combo, but it fails during startup with
  *   java.lang.UnsupportedClassVersionError: ch/qos/logback/classic/spi/LogbackServiceProvider
@@ -30,11 +31,11 @@ object AppMain extends IOApp.Simple {
  *   a) Builds and runs with same AnsiConsole issue as the IntelliJ setup #3 below.
  *   Setting withJansi to false clears this issue.
  *
- *   b) Note that SBT does not fork by default, so our code is run inside the SBT process.
- *   If we use SBT as an interactive shell, then we will have trouble using "run" more
+ *   b) Note that SBT does not fork by default, so by default will run our code INSIDE the SBT process.
+ *   If we use SBT as an interactive shell, then we will have trouble using our ".run" more
  *   than once in the same session, because our network port 8080 remains bound when the
- *   run is cancelled with Ctrl-dataSrcCli.  This can be addressed by:
- *   a) Invoking SBT in batch mode, e.g. "sbt run".
+ *   run is cancelled with Ctrl-C.  This issue can be addressed by running in one of these other ways:
+ *   a) Invoking SBT in batch mode, e.g. "sbt run" from BASH command line.
  *   b) Using "bgRun" command from SBT shell.
  *   c) Using "fork" instruction in our build.sbt.
  *   https://www.scala-sbt.org/1.x/docs/Forking.html

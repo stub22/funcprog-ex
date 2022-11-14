@@ -1,4 +1,4 @@
-package com.appstract.fpex.weather
+package com.appstract.fpex.extra
 
 import cats.effect.IO
 import cats.implicits._

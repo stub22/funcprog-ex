@@ -1,7 +1,6 @@
-package com.appstract.fpex.weather
+package com.appstract.fpex.extra
 
 import cats.effect.{IO, Resource}
-
 import munit.CatsEffectSuite
 import org.http4s.client.Client
 import org.http4s.ember.client.EmberClientBuilder
@@ -9,11 +8,9 @@ import org.http4s.{EntityBody, HttpRoutes, Method, Request, Response, Status, Ur
 import org.log4s
 import org.log4s.Logger
 
-private trait JokeSpecs
-
 class JokeRouteSpec extends CatsEffectSuite {
-
-	val OP_NM_JOKE = WeatherRoutes.OP_NAME_JOKE
+	val myRoutes = new ExtraRoutes {}
+	val OP_NM_JOKE = myRoutes.OP_NAME_JOKE
 
 	test("jokeRoutes returns status code 200") {
 		val log: Logger = log4s.getLogger
@@ -43,7 +40,7 @@ class JokeRouteSpec extends CatsEffectSuite {
 		val routeRes: Resource[IO, HttpRoutes[IO]] = for {
 			cli <- embCliRes
 			jokeSupp: JokeSupplier = jokeSuppFact.getImpl(cli)
-			route: HttpRoutes[IO] = WeatherRoutes.jokeRoutes(jokeSupp)
+			route: HttpRoutes[IO] = myRoutes.jokeRoutes(jokeSupp)
 		} yield(route)
 		// Now we have a potential-route wrapped in a resource
 		routeRes.use(hr => {

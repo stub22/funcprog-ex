@@ -2,96 +2,73 @@ package com.appstract.fpex.weather
 
 import cats.data.Kleisli
 import cats.effect.IO
+
 import org.http4s.{HttpRoutes, Request, Response}
 import org.http4s.dsl.io.Path
 import org.http4s.dsl.io._
 
 // Originally based on htt4s-io giter8 skeleton.
-object WeatherRoutes {
+trait WeatherRoutes {
 
-	val OP_NAME_GREET = "greet-user"
-	val OP_NAME_JOKE = "tell-joke"
-	val OP_NAME_WEATHER_FAKE = "check-weather-fake"
+	val OP_NAME_WEATHER_DUMMY = "check-weather-dummy"
+	val OP_NAME_WEATHER_FIXED = "check-weather-fixed"
 	val OP_NAME_WEATHER_WPATH = "check-weather-wpath"
 	val OP_NAME_WEATHER_WQRY = "check-weather-wquery"
 
 	// Grr.  Many types + vals have these names
-	val PATH_ROOT: Path = Path.Root
+	// val PATH_ROOT: Path = Path.Root
 
-	def jokeRoutes(jokeSupp: JokeSupplier): HttpRoutes[IO] = {
-		import JsonEnc_Joke._
-		HttpRoutes.of[IO] {
-			case GET -> PATH_ROOT / OP_NAME_JOKE =>
-				for {
-					joke: Msg_JokeForFrontend <- jokeSupp.getOneJokeIO
-					resp <- Ok(joke)
-				} yield resp
-		}
-	}
-
-	def greetingRoutes(greetSupp: GreetingSupplier): HttpRoutes[IO] = {
-		// Original example approach - using a for comprehension.
-		// Pull encoders into scope for use in encoding greetMsg
-		import JsonEnc_Greeting._
-		HttpRoutes.of[IO] {
-			case GET -> Root / OP_NAME_GREET / userName =>
-				for {
-					greetMsg: Msg_Greeting <- greetSupp.greetingForUser(Msg_UserJoined(userName))
-					resp: Response[IO] <- Ok(greetMsg)
-				} yield resp
-		}
-	}
-
-	def otherGreetingRoutes(greetSupp: GreetingSupplier): HttpRoutes[IO] = {
-		// Same functionality (ALMOST?!) without the for comprehension.
-		import JsonEnc_Greeting._
-		val flg_otherOther = true
-		HttpRoutes.of[IO] {
-			case GET -> Root / OP_NAME_GREET / userName => {
-				val joinMsg = Msg_UserJoined(userName)
-				val greetMsg_io: IO[Msg_Greeting] = greetSupp.greetingForUser(joinMsg)
-				if (flg_otherOther) {
-					val otherResp_io: IO[Response[IO]] = greetMsg_io.flatMap(Ok(_))
-					otherResp_io
-				}
-				else {
-					val resp_io: IO[Response[IO]] = Ok.apply(greetMsg_io)
-					resp_io
-				}
-			}
-		}
-	}
 	// Lat,Lon may come in as query parameters.
 	private object QPM_Latitude extends QueryParamDecoderMatcher[String]("lat")
 	private object QPM_Longitude extends QueryParamDecoderMatcher[String]("lon")
-	def forecastRoutes(frcstSupp: ForecastSupplier, flg_useFake : Boolean): HttpRoutes[IO] = {
-		import JsonEnc_Forecast._
-		// Here is a dummy forecast-maker effect that doesn't need any input from the user's request.
-		// For example, if might use a fixed lat-long.
-		val fakeForcIO: IO[Msg_Forecast] = if (flg_useFake) frcstSupp.getTotallyFakeForecast else frcstSupp.fetchMostlyFakeForecastIO
+
+	def reportRoutes(frcstSupp: WeatherReportSupplier): HttpRoutes[IO] = {
+		import JsonEncoders_Report._
+
+		// FIXME:  So far we only support the latLonPairTxt input format, which is a single String containing
+		// latitude,longitude as decimals
 		HttpRoutes.of[IO] {
-			case GET -> Root / OP_NAME_WEATHER_FAKE => {
+			case GET -> Root / OP_NAME_WEATHER_DUMMY => {
+				// Just a frontend plumbing test.  Does not access the backend weather.gov service.
 				for {
-					frcstMsg <- fakeForcIO
-					resp: Response[IO] <- Ok(frcstMsg)
+					wrprtOrErr <- frcstSupp.getFakeWeather
+					resp: Response[IO] <- weatherOutputMsgToWebResponse(wrprtOrErr) // Ok(wrprtOrErr)
+				} yield resp
+			}
+			case GET -> Root / OP_NAME_WEATHER_FIXED => {
+				// Real forecast-maker effect, but doesn't use any input from the user's request.
+				// Uses some fixed lat-long location.
+				for {
+					wrprtOrErr <- frcstSupp.fetchWeatherForFixedLocation
+					resp: Response[IO] <- weatherOutputMsgToWebResponse(wrprtOrErr) //  Ok(wrprtOrErr)
 				} yield resp
 			}
 			case GET -> Root / OP_NAME_WEATHER_WPATH / latLonTxt => {
-
+				// Expects a latLon text pair in the request path, in form compatible with weather.gov/points service,
+				// Example:  "39.7456,-97.0892"
 				for {
-					frcstMsg <- fakeForcIO
-					resp: Response[IO] <- Ok(frcstMsg)
+					wrprtOrErr <- frcstSupp.fetchWeatherForLatLonPairTxt(latLonTxt)
+					resp: Response[IO] <- weatherOutputMsgToWebResponse(wrprtOrErr) // Ok(wrprtOrErr)
+				} yield resp
+			}
+			case GET -> Root / OP_NAME_WEATHER_WQRY :? QPM_Latitude(latTxt) +& QPM_Longitude(lonTxt) => {
+				for {
+					wrprtOrErr <- frcstSupp.fetchWeatherForLatLon(latTxt, lonTxt)
+					resp: Response[IO] <- weatherOutputMsgToWebResponse(wrprtOrErr) //  Ok(wrprtOrErr)
 				} yield resp
 			}
 		}
 	}
 
+	def weatherOutputMsgToWebResponse(msg : Either[Msg_WeatherError, Msg_WeatherReport]) : IO[Response[IO]] = {
+		import JsonEncoders_Report._
+		msg match {
 
-	def composeRoutesIntoKleisli(helloWorldAlg: GreetingSupplier, jokeAlg: JokeSupplier, frcstSupp : ForecastSupplier): Kleisli[IO, Request[IO], Response[IO]] = {
-		import cats.implicits._
-		val composedRoutes = greetingRoutes(helloWorldAlg) <+>  jokeRoutes(jokeAlg) <+> forecastRoutes(frcstSupp, false)
-		composedRoutes.orNotFound
+			case Left(err) => Ok(err)
+			case Right(report) => Ok(report)
+		}
 	}
+
 
 }
 

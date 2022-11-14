@@ -4,7 +4,8 @@ val MunitVersion = "0.7.29"
 val LogbackVersion = "1.4.1"    // StuB22 notes:  Logback 1.4.1 requires JDK 11+.
 val MunitCatsEffectVersion = "1.0.6"
 
-// We get a lot of compiler flags from the tpolecat plugin.
+// We get a lot of compiler flags from the tpolecat plugin, configured in project/plugins.sbt.
+// Here is one way to disable the -Xfatal-warnings flag:
 Compile / scalacOptions --= Seq("-Xfatal-warnings")
 
 lazy val root = (project in file("."))
