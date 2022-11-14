@@ -33,7 +33,7 @@ Note that these tests access the backend api.weather.gov service.
 ### ACCESSING THE SERVICE
 
 Our service launches on port 8088.  Changing this port requires modifying the scala code in 
-AppServer.scala (specifically AppServerBuilder.makeServerResourceForHttpApp).
+AppServer.scala (specifically `AppServerBuilder.makeServerResourceForHttpApp`).
 
 The weather-svc offers two different URL endpoints, which may be accessed using HTTP GET.
 
@@ -82,6 +82,7 @@ service console.
 
 #### Code Naming Conventions
 
- * Msg_Xyz : case classes used in building responses have names starting with "Msg_"
+ * Msg_Xyz : case classes used to hold HTTP responses have names starting with "Msg_".  
+   * We use this pattern for both backend and frontend responses.
 
  * JsonEncoder_Xyz : Json encoding contexts (using circe) start with "JsonEncoder_" or "JsonDecoder_"
