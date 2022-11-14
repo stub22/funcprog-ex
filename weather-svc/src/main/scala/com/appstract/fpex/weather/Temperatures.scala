@@ -23,7 +23,7 @@ private case class TempRange(name : String, scale : TempScale, minTemp_opt : Opt
 	}
 }
 
-class TemperInterpImpl extends TemperatureInterpreter {
+class TempInterpImpl extends TemperatureInterpreter {
 
 	// Explicitly defined constant values which are used multiple times in describing temperature ranges for day and night.
 	// Here "MAX_F" means max degrees Farenheit.

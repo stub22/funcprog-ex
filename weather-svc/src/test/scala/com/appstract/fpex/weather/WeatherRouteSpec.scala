@@ -10,14 +10,12 @@ import org.log4s
 import org.log4s.Logger
 
 class WeatherRouteSpec extends CatsEffectSuite {
-	val myRoutes = new WeatherRoutes {}
+	private val myRoutes = new WeatherRoutes {}
 
-	val WEATHER_DUMMY_URL_TXT = myRoutes.OP_NAME_WEATHER_DUMMY
-
-	lazy val myLog: Logger = log4s.getLogger
+	private val myLog: Logger = log4s.getLogger
 
 	test("Dummy forecast returns status code 200") {
-		val weatherUrlPath = s"/${WEATHER_DUMMY_URL_TXT}"
+		val weatherUrlPath = s"/${myRoutes.OP_NAME_WEATHER_DUMMY}"
 		applyWeatherRouteAndAssertStatusOK(weatherUrlPath)
 	}
 	test("Forecast for fixed location returns status code 200") {
@@ -77,11 +75,11 @@ class WeatherRouteSpec extends CatsEffectSuite {
 		myLog.info(s"WeatherRouteSpec.applyWeatherRoute built embCliRsrc=${embCliRsrc}")
 		val routeResource: Resource[IO, HttpRoutes[IO]] = for {
 			cli <- embCliRsrc
-			forecastSupp: WeatherReportSupplier = new WReportSupplierImpl(cli)
+			forecastSupp: WeatherReportSupplier = new WeatherReportSupplierImpl(cli)
 			route: HttpRoutes[IO] = myRoutes.reportRoutes(forecastSupp)
 		} yield(route)
 		// Now we have a potential-route wrapped in a resource.
-		// We build and use the route just one time, and then release it.
+		// When the responseIO is eventually run, it will build and use the route just one time, and then release it.
 		val responseIO = routeResource.use(hr => {
 			hr.orNotFound(requestIO)
 		})

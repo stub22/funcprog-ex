@@ -51,7 +51,7 @@ class BackendForecastProviderImpl(dataSrcCli: => Client[IO]) extends BackendFore
 		myLog.info(s"fetchAreaInfoOrError for areaRq=${rqTxt}")
 		// Submit Area request, expecting a Json response-body, which we decode into AreaInfo message, or an error.
 		val areaResultIO: IO[Msg_BackendAreaInfo] = dataSrcCli.expect[Msg_BackendAreaInfo](areaRq)
-		// Map any exception thrown (during HTTP fetch) into a Msg_BackendError, after logging it
+		// Map any exception thrown (during HTTP fetch+decode) into a Msg_BackendError, after logging it
 		val robustAreaIO: IO[Msg_BackendAreaInfo] = areaResultIO.adaptError {
 			case t => {
 				myLog.error(t)(s"fetchAreaInfoOrError for ${rqTxt} is handling throwable of type " + t.getClass)
@@ -71,7 +71,7 @@ class BackendForecastProviderImpl(dataSrcCli: => Client[IO]) extends BackendFore
 		myLog.info(s"fetchCurrentForecastPeriodOrError forecastRq=${rqTxt}")
 
 		val forecastJson: IO[Json] = dataSrcCli.expect[Json](forecastRq)
-		// Map any exception thrown (during HTTP fetch) into a Msg_BackendError, after logging it
+		// Map any exception thrown (during HTTP fetch+decode) into a Msg_BackendError, after logging it
 		val robustForecastJson: IO[Json] = forecastJson.adaptError {
 			case t => {
 				myLog.error(t)(s"fetchCurrentForecastPeriodOrError for ${rqTxt} is handling throwable of type ${t.getClass}")
