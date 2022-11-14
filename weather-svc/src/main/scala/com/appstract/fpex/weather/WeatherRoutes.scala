@@ -10,8 +10,7 @@ trait WeatherRoutes {
 	private val myLog: Logger = log4s.getLogger
 
 	// Our frontend HTTP operation names:
-	val OP_NAME_WEATHER_DUMMY = "check-weather-dummy"
-	val OP_NAME_WEATHER_FIXED = "check-weather-fixed"
+
 	val OP_NAME_WEATHER_WPATH = "check-weather-wpath"
 	val OP_NAME_WEATHER_WQRY = "check-weather-wquery"
 
@@ -25,21 +24,6 @@ trait WeatherRoutes {
 		// 1) As a comma separated string in the URL path
 		// 2) As two separate URL query parameters
 		HttpRoutes.of[IO] {
-			case GET -> Root / OP_NAME_WEATHER_DUMMY => {
-				// Just a frontend plumbing test.  Does not access the backend weather.gov service.
-				for {
-					wrprtOrErr <- frcstSupp.getFakeWeather
-					resp: Response[IO] <- weatherOutputMsgToWebResponse(wrprtOrErr) // Ok(wrprtOrErr)
-				} yield resp
-			}
-			case GET -> Root / OP_NAME_WEATHER_FIXED => {
-				// Real forecast-maker effect, but doesn't use any input from the user's request.
-				// Uses some fixed lat-long location.
-				for {
-					wrprtOrErr <- frcstSupp.fetchWeatherForFixedLocation
-					resp: Response[IO] <- weatherOutputMsgToWebResponse(wrprtOrErr) //  Ok(wrprtOrErr)
-				} yield resp
-			}
 			case GET -> Root / OP_NAME_WEATHER_WPATH / latLonTxt => {
 				// Expects a latLon text pair in the request path, in form compatible with weather.gov/points service,
 				// Example:  "39.7456,-97.0892"
