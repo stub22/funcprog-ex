@@ -11,7 +11,7 @@ import org.log4s.{Logger}
 
 private object JsonDecoders_BackendAreaInfo {
 	// Circe decoder bindings for building Msg_AreaInfo* from JSON tree.
-	// These implicits could instead be embedded directly into BackendForecastProviderImpl,
+	// These implicits could instead be defined locally in the BackendForecastProviderImpl,
 	// but Stu chose to share them in this top-level object, following common practice.
 	import org.http4s.circe.{jsonOf}
 

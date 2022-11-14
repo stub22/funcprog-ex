@@ -3,7 +3,7 @@ package com.appstract.fpex.weather
 import cats.data.Kleisli
 import cats.effect.IO
 import cats.effect.kernel.Resource
-import com.appstract.fpex.extra.{ExtraRoutes, GreetingSupplier, GreetingSupplierSingleton, JokeSupplier, JokeSupplierFactory}
+
 import org.http4s.server.Server
 import org.http4s.client.Client
 import org.http4s.{HttpApp, Request, Response}
@@ -39,27 +39,11 @@ trait AppServerBuilder {
 		Logger.httpApp(true, true)(routesKleisli)
 	}
 
-	// An HttpRoutes[F] is a simple alias for Kleisli[OptionT[F, ?], Request, Response]
 	private def makeAppRoutesKleisli(dataSrcCli: => Client[IO]) : Kleisli[IO, Request[IO], Response[IO]] = {
-		val jokeSuppFactory = new JokeSupplierFactory {}
-		val greetingSuppFactory = GreetingSupplierSingleton
-
 		val weatherRoutes = new WeatherRoutes{}
-		val extraRoutes = new ExtraRoutes {}
-
-		val grtSupp: GreetingSupplier = greetingSuppFactory.getImpl
-		val jokeSupp: JokeSupplier = jokeSuppFactory.getImpl(dataSrcCli)
 		val forecastSupp : WeatherReportSupplier = new WeatherReportSupplierImpl(dataSrcCli)
-
-		// Bring the <+> operator into scope as shorthand for SemigroupK.combineK
-		import cats.implicits._
-
-		val servicesK = (extraRoutes.greetingRoutes(grtSupp)
-					<+>	extraRoutes.jokeRoutes(jokeSupp)
-					<+>	weatherRoutes.reportRoutes(forecastSupp))
-
-		val httpRoutesKleisli: Kleisli[IO, Request[IO], Response[IO]] = servicesK.orNotFound
-
+		val weatherRoutesK = weatherRoutes.reportRoutes(forecastSupp)
+		val httpRoutesKleisli: Kleisli[IO, Request[IO], Response[IO]] = weatherRoutesK.orNotFound
 		httpRoutesKleisli
 	}
 
