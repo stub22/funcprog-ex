@@ -42,4 +42,7 @@ trait WeatherReportSupplier {
 	def fetchWeatherForLatLonPairTxt(latLonPairTxt : String) : IO[WReportOrErr]
 
 	def fetchWeatherForLatLon(latTxt : String, lonTxt : String) : IO[WReportOrErr]
+
+	// TODO:  Allow client to supply lat-lon location in different shapes, e.g. as two Decimals or Floats.
+	// TODO:  Provide appropriate validation of input location data.
 }

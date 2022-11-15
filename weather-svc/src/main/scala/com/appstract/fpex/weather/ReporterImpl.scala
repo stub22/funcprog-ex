@@ -22,33 +22,32 @@ class WeatherReportSupplierImpl(dataSrcCli: => Client[IO]) extends WeatherReport
 
 	// latLonTxt is in the comma separated lat-long format used by the backend weather service, e.g. "39.7456,-97.0892"
 	override def fetchWeatherForLatLonPairTxt(latLonPairTxt : String) : IO[WReportOrErr] = {
-		// val areaRq: IO[Request[IO]] = myBFP.areaGetRequest(latLonPairTxt)
-		// val forecastInfo: IO[Msg_BackendPeriodForecast] = myBFP.fetchAreaInfoThenForecastInfo(areaRq)
 		val forecastInfo: IO[Msg_BackendPeriodForecast] = myBFP.fetchForecastInfoForLatLonTxt(latLonPairTxt)
 		val report: IO[Msg_WeatherReport] = forecastInfo.flatMap(buildWeatherReport(latLonPairTxt, _))
-		wrioToWROEIO(report, latLonPairTxt)
+		reportToWROEIO(report, latLonPairTxt)
 	}
 
 	private def buildWeatherReport(latLonPairTxt : String, backendForecast : Msg_BackendPeriodForecast) : IO[Msg_WeatherReport]  = {
 		myLog.info(s"buildWeatherReport using backendForecast : ${backendForecast}")
-		val tempDesc = myInterp.describeTempFarenheit(backendForecast.temperature, backendForecast.isDaytime)
+		val tempDesc = myInterp.describeTempFarenheit(backendForecast.temperature.toFloat, backendForecast.isDaytime)
 		val report = Msg_WeatherReport(MTYPE_REPORT, latLonPairTxt, backendForecast.shortForecast, tempDesc)
 		myLog.info(s"buildWeatherReport made report: ${report}")
 		IO.pure(report)
 	}
 
-	// Translate any type of result into a message (successful or error) we can output as JSON for the user.
-	private def wrioToWROEIO(wrio : IO[Msg_WeatherReport], geoLoc : String) : IO[WReportOrErr] = {
-		wrio.redeem(errorToLeftResult(geoLoc, _), reportToRightResult(_))
+	// Translate any possible result from reportIO into a message (successful or error) we can output as JSON.
+	// geoLoc contains a text description of the location; it is currently the same as a latLonPairTxt.
+	private def reportToWROEIO(reportIO : IO[Msg_WeatherReport], geoLoc : String) : IO[WReportOrErr] = {
+		reportIO.redeem(errorToLeftResult(geoLoc, _), reportToRightResult(_))
 	}
 
-	private def reportToRightResult(mwr : Msg_WeatherReport) : WReportOrErr = Right(mwr)
+	private def reportToRightResult(report : Msg_WeatherReport) : WReportOrErr = Right(report)
 
-	private def errorToLeftResult(geoLoc : String, t : Throwable) : WReportOrErr = Left(excToWerr(geoLoc, t))
+	private def errorToLeftResult(geoLoc : String, t : Throwable) : WReportOrErr = Left(exceptToWeatherErr(geoLoc, t))
 
-	private def excToWerr(geoLoc : String, t : Throwable) = {
+	private def exceptToWeatherErr(geoLoc : String, t : Throwable) = {
 		t match {
-			case backendErr : Msg_BackendError => Msg_WeatherError(MTYPE_ERROR, geoLoc, "BACKEND_ERR", backendErr.toString)
+			case backendErr : BackendError => Msg_WeatherError(MTYPE_ERROR, geoLoc, "BACKEND_ERR", backendErr.asText)
 			case other => Msg_WeatherError(MTYPE_ERROR, geoLoc, "OTHER_ERR", other.toString)
 		}
 	}

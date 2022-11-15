@@ -5,7 +5,7 @@ import org.log4s
 import org.log4s.Logger
 
 object AppMain extends IOApp.Simple {
-	// Entry point for our cats-effect application:
+	// Entry point for our http4s + cats-effect application:
 	def run:IO[Unit] = {
 		val log: Logger = log4s.getLogger
 		log.info("AppMain.run BEGIN: making AppServerBuilder")

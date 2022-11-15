@@ -9,7 +9,7 @@ trait TemperatureInterpreter {
 	// Assign a descriptive label ("hot", "cold", "moderate") for a given temperature, ocurring in either daytime or nightime.
 	def describeTempFarenheit(temp : Float, flg_isDaytime : Boolean) : String
 
-	// TODO:  Add Celsius API method, if we decide users need this.
+	// TODO: Consider adding Celsius API method.
 	// Seems api.weather.gov returns Farenheit by default.  But does that vary by query location?
 	// def describeTempCelsius(tempC : Float, flg_isDaytime : Boolean) : String
 }
@@ -32,12 +32,12 @@ class TempInterpImpl extends TemperatureInterpreter {
 	// Explicitly defined constant values which are used multiple times in describing temperature ranges for day and night.
 	// Here "MAX_F" means max degrees Farenheit.
 	private val TEMP_RANGE_NAME_COLD = "cold"
-	private val BOUND_DAY_COLD_MAX_F = 54.5f
-	private val BOUND_NIGHT_COLD_MAX_F = 39.9f
+	private val BOUND_DAY_COLD_MAX_F = 54.5f	// Daytime temps lower than this are "cold"
+	private val BOUND_NIGHT_COLD_MAX_F = 39.9f	// Nighttime temps lower than this are "cold"
 
 	private val TEMP_RANGE_NAME_MODERATE = "moderate"
-	private val BOUND_DAY_MODERATE_MAX_F = 84.7f
-	private val BOUND_NIGHT_MODERATE_MAX_F = 73.1f
+	private val BOUND_DAY_MODERATE_MAX_F = 84.7f	// Daytime temps below this (but above BOUND_DAY_COLD_MAX_F) are "moderate"
+	private val BOUND_NIGHT_MODERATE_MAX_F = 73.1f	// Nighttime temps below this (but above BOUND_NIGHT_COLD_MAX_F) are "moderate"
 
 	// Any temperature hotter than the MODERATE_MAX must be a HOT temp.
 	private val TEMP_RANGE_NAME_HOT = "hot"

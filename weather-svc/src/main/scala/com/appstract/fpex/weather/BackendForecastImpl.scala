@@ -55,7 +55,7 @@ class BackendForecastProviderImpl(dataSrcCli: => Client[IO]) extends BackendFore
 		val robustAreaIO: IO[Msg_BackendAreaInfo] = areaResultIO.adaptError {
 			case t => {
 				myLog.error(t)(s"fetchAreaInfoOrError for ${rqTxt} is handling throwable of type " + t.getClass)
-				Msg_BackendError("fetchAreaInfoOrError", rqTxt, t)
+				BackendError("fetchAreaInfoOrError", rqTxt, t)
 			}
 		}
 		robustAreaIO
@@ -75,7 +75,7 @@ class BackendForecastProviderImpl(dataSrcCli: => Client[IO]) extends BackendFore
 		val robustForecastJson: IO[Json] = forecastJson.adaptError {
 			case t => {
 				myLog.error(t)(s"fetchCurrentForecastPeriodOrError for ${rqTxt} is handling throwable of type ${t.getClass}")
-				Msg_BackendError("fetchCurrentForecastPeriodOrError", rqTxt, t)
+				BackendError("fetchCurrentForecastPeriodOrError", rqTxt, t)
 			}
 		}
 		// Extract useful forecast period(s) from the backend JSON
@@ -86,7 +86,7 @@ class BackendForecastProviderImpl(dataSrcCli: => Client[IO]) extends BackendFore
 }
 
 private trait BackendRequestBuilder {
-	val POINTS_BASE_URL = "https://api.weather.gov/points/"
+	private val POINTS_BASE_URL = "https://api.weather.gov/points/"
 
 	def areaGetRequest(latLonTxt : String) : IO[Request[IO]] = {
 		val fullUriTxt = POINTS_BASE_URL + latLonTxt
@@ -111,14 +111,11 @@ private trait BackendRequestBuilder {
 
 trait PeriodForecastExtractor {
 	/***
-	 * Logically and semantically we have some ambiguity here.
-	 * Note that the user may be querying from anywhere, for any location, at any time.
-	 * We have not studied the backend API contract thoroughly.
 	 * Empirically, the backend seems to provide a time-ordered sequence of forecast periods, alternating between
 	 * "daytime" and "nightime" (indicated by the 'isDaytime' flag in the JSON response).
 	 *
 	 * We have so far been asked to supply only a toy current-weather feature without much detail.
-	 * To simplify coding we have chosen to use only the most current forecast period, regardless of day/night.
+	 * To simplify our coding task, we have chosen to use only the most current forecast period, regardless of day/night.
 	 * However we do capture the isDaytime flag, so that client code may interpret the weather accordingly.
 	 * If desired we could build a larger data structure to capture multiple periods, but for now
 	 * we assume that returning a single period forecast is sufficient.
@@ -156,43 +153,13 @@ trait PeriodForecastExtractor {
 					.getOrElse(Left(DecodingFailure("Could not focus on period[0]", pCurs0.history)))
 
 		val decoded0_IO: IO[Msg_BackendPeriodForecast] = IO.fromEither(p0Rec_orErr)
-		val flg_doUnusedManualCaptureOfSecondPeriod = true
-		if (flg_doUnusedManualCaptureOfSecondPeriod) {
-			// Testing that we can fetch multiple periods, and also that the manual capture code works.
-			val pCurs1 = periodsCursor.downN(1)
-			val p1Rec_orErr = manuallyDecodeForecastPeriod(pCurs1)
-		}
 		decoded0_IO
-	}
-
-	// FIXME:  All the code below is unnecessary because  .as[Msg_BackendPeriodForecast] works just fine.
-
-	private val FLD_IS_DAY = "isDaytime"
-	private val FLD_TEMP = "temperature"
-	private val FLD_TEMP_UNIT = "temperatureUnit"
-	private val FLD_SHORT_FORE = "shortForecast"
-	private val FLD_DETAILED_FORE = "detailedForecast"
-	private def manuallyDecodeForecastPeriod(periodCursor: ACursor) : Decoder.Result[Msg_BackendPeriodForecast] = {
-		// typeResult[A] = Either[DecodingFailure, A]
-		val forcInf: Either[DecodingFailure, Msg_BackendPeriodForecast] = for {
-			// Each of these "get" fetchers returns an Option
-			isDay <- periodCursor.get[Boolean](FLD_IS_DAY)
-			// Expect temperatureDescription to be an Int
-			temp <- periodCursor.get[Int](FLD_TEMP)
-			// Expect temperatureDescription-unit to be a single char ('F' or 'C')
-			tempUnit <- periodCursor.get[Char](FLD_TEMP_UNIT)
-			shortFore <- periodCursor.get[String](FLD_SHORT_FORE)
-			detailedFore <- periodCursor.get[String](FLD_DETAILED_FORE)
-		} yield Msg_BackendPeriodForecast(isDay, temp, tempUnit, shortFore, detailedFore)
-		myLog.info(s"decodeInfoManually at periodCursor=${periodCursor} produced: ${forcInf}")
-		forcInf
 	}
 }
 
 /***
 
-trait Client[F[_]] {
-  def runOld(req: Request[F]): Resource[F, Response[F]]
+Fragment of an example JSON response from the api.weather.gov/gridpoints service, showing a sequencew of
 
 "properties": {
       "periods": [

@@ -47,6 +47,31 @@ We have not yet attempted to determine how many digits of precision can be suppl
     Query param arguments example
     http://localhost:8088/check-weather-wquery?lat=40.2222&lon=-97.0997
 
+A successful HTTP response will look like this
+    
+    {"messageType":"WEATHER_REPORT","latLonPairTxt":"39.7451,-97.0997","summary":"Sunny","temperatureDescription":"cold"}
+
+
+### ERROR REPORTING
+
+If the URL submitted to weather-svc does not match a form that the weather-svc expects, the client receives an HTTP 404 Not Found response.
+
+If the URL format is OK, but the weather-svc cannot access the backend weather data for the submitted location, then client will receive a detailed JSON error resonse. This error will look different depending on whether the error occurs in the first stage operation `fetchAreaInfoOrError` or the second stage `fetchCurrentForecastPeriodOrError`.
+
+Below are two example first stage errors from `fetchAreaInfoOrError`.
+The first one reflecting malformed location input. 
+
+Note the backend URL embedded inside the error message.  We have noticed that these backend URLs tend to fail in an intermittent fashion.
+The same location input may lead to success one minute, and an error the next minute!
+
+    {"messageType":"WEATHER_ERROR","latLonPairTxt":"blarp","errorName":"BACKEND_ERR","errorInfo":"BackendError(opName=fetchAreaInfoOrError, opArgs=Request(method=GET, uri=https://api.weather.gov/points/blarp, httpVersion=HTTP/1.1, headers=Headers()), exc=org.http4s.client.UnexpectedStatus: unexpected HTTP status: 404 Not Found for request GET https://api.weather.gov/points/blarp)"}
+
+    {"messageType":"WEATHER_ERROR","latLonPairTxt":"33.2210,-88.0055","errorName":"BACKEND_ERR","errorInfo":"BackendError(opName=fetchAreaInfoOrError, opArgs=Request(method=GET, uri=https://api.weather.gov/points/33.2210,-88.0055, httpVersion=HTTP/1.1, headers=Headers()), exc=org.http4s.client.UnexpectedStatus: unexpected HTTP status: 301 Moved Permanently for request GET https://api.weather.gov/points/33.2210,-88.0055)"}
+
+An example second stage error from `fetchCurrentForecastPeriodOrError`.  Again, these errors occur intermittently.
+
+    {"messageType":"WEATHER_ERROR","latLonPairTxt":"44.7755,-99.9923","errorName":"BACKEND_ERR","errorInfo":"BackendError(opName=fetchCurrentForecastPeriodOrError, opArgs=Request(method=GET, uri=https://api.weather.gov/gridpoints/ABR/67,61/forecast, httpVersion=HTTP/1.1, headers=Headers()), exc=org.http4s.client.UnexpectedStatus: unexpected HTTP status: 500 Internal Server Error for request GET https://api.weather.gov/gridpoints/ABR/67,61/forecast)"}
+
 ### NOTES ON IMPLEMENTATION
 
 This service is implemented using Typelevel [http4s](https://http4s.org/).
@@ -61,16 +86,16 @@ with coordinates in the URI-PATH, not in query parameters.
 
 Example URL for the "points" service, with lat,long at the end of the PATH:
 
-https://api.weather.gov/points/39.7456,-97.0892
+    https://api.weather.gov/points/39.7456,-97.0892
 
-In the JSON results from that service we find this followup URL
+In the JSON results from that service we find this followup URL, which retrieves detailed forecast info.
 
-https://api.weather.gov/gridpoints/TOP/31,80/forecast
+    https://api.weather.gov/gridpoints/TOP/31,80/forecast
 
-One problem we face is that this latter gridpoints service often fails, for reasons we have
-not analyzed.  When these failures occur, we attempt to return a useful error message to 
-our API user (as a JSON-serialized `Msg_WeatherReport`), as well as logging information to our
-service console.
+One problem we face is that this latter gridpoints service often fails intermittently, for reasons we have not analyzed.  
+
+When these failures occur, we attempt to return a useful error message to our API user (as a JSON-serialized `Msg_WeatherReport`), 
+as well as logging information to our service console.
 
 ### NOTES ON CODE STYLE
 
