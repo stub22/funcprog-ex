@@ -2,7 +2,7 @@
 
 ## Weather Service - A functional programming exercise
 
-This folder contains a Scala 2.13 project, based on the http4s-io giter8 project skeleton.
+This folder contains a Scala 2.13 project, based on the [http4s-io](https://github.com/http4s/http4s-io.g8) giter8 project skeleton.
 
 This weather-svc serves brief summary weather forecasts, using information fetched from this 
 [National Weather Service API](https://www.weather.gov/documentation/services-web-api) 
@@ -32,7 +32,7 @@ Note that these tests access the backend api.weather.gov service.
 
 ### ACCESSING THE SERVICE
 
-Our service launches on port 8088.  Changing this port requires modifying the scala code in 
+Our service launches on port 8080.  Changing this port requires modifying the scala code in 
 AppServer.scala (specifically `AppServerBuilder.makeServerResourceForHttpApp`).
 
 The weather-svc offers two different URL endpoints, which may be accessed using HTTP GET.
@@ -45,7 +45,7 @@ We have not yet attempted to determine how many digits of precision can be suppl
     http://localhost:8080/check-weather-wpath/40.2222,-97.0997
 
     Query param arguments example
-    http://localhost:8088/check-weather-wquery?lat=40.2222&lon=-97.0997
+    http://localhost:8080/check-weather-wquery?lat=40.2222&lon=-97.0997
 
 A successful HTTP response will look like this
     
@@ -107,7 +107,7 @@ as well as logging information to our service console.
 
 #### Code Naming Conventions
 
- * Msg_Xyz : case classes used to hold HTTP responses have names starting with "Msg_".  
+ * `Msg_Xyz` : case classes used to hold HTTP responses have names starting with `Msg_`.  
    * We use this pattern for both backend and frontend responses.
 
- * JsonEncoder_Xyz : Json encoding contexts (using circe) start with "JsonEncoder_" or "JsonDecoder_"
+ * `JsonEncoder_Xyz` : Json encoding/decoding contexts (using Circe library) start with `JsonEncoder_` or `JsonDecoder_`
