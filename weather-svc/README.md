@@ -75,36 +75,43 @@ An example second stage error from `fetchCurrentForecastPeriodOrError`.  Again, 
 
     {"messageType":"WEATHER_ERROR","latLonPairTxt":"44.7755,-99.9923","errorName":"BACKEND_ERR","errorInfo":"BackendError(opName=fetchCurrentForecastPeriodOrError, opArgs=Request(method=GET, uri=https://api.weather.gov/gridpoints/ABR/67,61/forecast, httpVersion=HTTP/1.1, headers=Headers()), exc=org.http4s.client.UnexpectedStatus: unexpected HTTP status: 500 Internal Server Error for request GET https://api.weather.gov/gridpoints/ABR/67,61/forecast)"}
 
-### NOTES ON IMPLEMENTATION
-
-This service is implemented using Typelevel [http4s](https://http4s.org/) and [cats-effect](https://typelevel.org/cats-effect/).
-
-Our scala code is based on the [http4s-io](https://github.com/http4s/http4s-io.g8) project template.
-
-JSON is encoded+decoded using [circe](https://circe.github.io/circe/).
+### COMMNICATION WITH BACKEND
 
 To fetch weather info from the backend api.weather.gov, we use a sequence of two calls
 to the "points" and then "gridpoints" services.  These services are accessed by URLs
 with coordinates in the URI-PATH, not in query parameters.
 
-Example URL for the "points" service, with lat,long at the end of the PATH:
+Example URL for the `points` service, with lat,long at the end of the PATH:
 
     https://api.weather.gov/points/39.7456,-97.0892
 
-In the JSON results from that service we find this followup URL, which retrieves detailed forecast info.
+In the JSON results from that service, we find this followup URL for the `gridpoints` service, which we follow to retrieve detailed forecast info.
 
     https://api.weather.gov/gridpoints/TOP/31,80/forecast
 
-One problem we face is that this latter gridpoints service often fails intermittently, for reasons we have not analyzed.  
+But one problem we face is that this latter `gridpoints` service often fails intermittently.  We have not attempted to determine the source of these failures.
 
 When these failures occur, we attempt to return a useful error message to our API user (as a JSON-serialized `Msg_WeatherReport`), 
 as well as logging information to our service console.
 
-### NOTES ON CODE STYLE
+### LIBRARIES 
+
+This service is implemented using Typelevel [http4s](https://http4s.org/) and [cats-effect](https://typelevel.org/cats-effect/).
+
+Our scala code is based on the [http4s-io](https://github.com/http4s/http4s-io.g8) project template.
+All our dependencies come from this template.
+
+JSON is encoded+decoded using [circe](https://circe.github.io/circe/).
+
+### A NOTE ABOUT PURITY
+
+Our scala code is mostly pure in the FP sense, but does impurely use logging side-effects via [log4s](https://github.com/Log4s/log4s).
+
+### CODE STYLE CHOICES
 
  * Limited use of scala wildcard imports.  Usually we try to confine these imports to a narrow scope, such as a particular trait or method.
 
- * Limited use of scala "object" singletons.
+ * Limited use of scala "object" singletons. No use of the "Companion" object pattern.
 
  * Preference for explicit typing and invocations over sugary structures like for-comprehensions.  
 

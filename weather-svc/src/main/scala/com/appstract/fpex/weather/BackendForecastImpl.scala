@@ -20,7 +20,6 @@ private object JsonDecoders_BackendAreaInfo {
 	implicit val areaInfoEntityDecoder: EntityDecoder[IO, Msg_BackendAreaInfo] = jsonOf
 }
 
-
 class BackendForecastProviderImpl(dataSrcCli: => Client[IO]) extends BackendForecastProvider {
 
 	private val myLog: Logger = log4s.getLogger
@@ -29,29 +28,29 @@ class BackendForecastProviderImpl(dataSrcCli: => Client[IO]) extends BackendFore
 	private val myForecastExtractor = new PeriodForecastExtractor {}
 
 	override def fetchForecastInfoForLatLonTxt (latLonPairTxt : String) : IO[Msg_BackendPeriodForecast] = {
-		val areaRq: IO[Request[IO]] = myRequestBuilder.areaGetRequest(latLonPairTxt)
-		val forecastInfo: IO[Msg_BackendPeriodForecast] = fetchAreaInfoThenForecastInfo(areaRq)
-		forecastInfo
+		val areaRqIO: IO[Request[IO]] = myRequestBuilder.areaGetRequest(latLonPairTxt)
+		val forecastInfoIO: IO[Msg_BackendPeriodForecast] = fetchAreaInfoThenForecastInfo(areaRqIO)
+		forecastInfoIO
 	}
 
-	private def fetchAreaInfoThenForecastInfo (areaRq: IO[Request[IO]]) : IO[Msg_BackendPeriodForecast] = {
+	private def fetchAreaInfoThenForecastInfo (areaRqIO: IO[Request[IO]]) : IO[Msg_BackendPeriodForecast] = {
 		// Each of these steps is suspended and may (later) encounter errors.  Notice that each LHS is wrapped in IO.
 		// We could instead use a sugary for-comprehension here.  But we prefer to make types fully explicit at each
 		// step, as long as our code is not TOO verbose.
-		val areaInfo: IO[Msg_BackendAreaInfo] = areaRq.flatMap(fetchAreaInfoOrError(_))
-		val forecastRq: IO[Request[IO]] = areaInfo.flatMap(myRequestBuilder.buildForecastRqFromAreaInfo(_))
-		val forecastInfo: IO[Msg_BackendPeriodForecast] = forecastRq.flatMap(fetchCurrentForecastPeriodOrError(_))
-		forecastInfo
+		val areaInfoIO: IO[Msg_BackendAreaInfo] = areaRqIO.flatMap(fetchAreaInfoOrError(_))
+		val forecastRqIO: IO[Request[IO]] = areaInfoIO.flatMap(myRequestBuilder.buildForecastRqFromAreaInfo(_))
+		val forecastInfoIO: IO[Msg_BackendPeriodForecast] = forecastRqIO.flatMap(fetchCurrentForecastPeriodOrError(_))
+		forecastInfoIO
 	}
 
-	override def fetchAreaInfoOrError(areaRq : Request[IO]) : IO[Msg_BackendAreaInfo] = {
+	override def fetchAreaInfoOrError(areaRqIO : Request[IO]) : IO[Msg_BackendAreaInfo] = {
 		import cats.implicits._
 		import JsonDecoders_BackendAreaInfo._
 		val opName : String = "fetchAreaInfoOrError"
-		val rqTxt = areaRq.toString
-		myLog.info(s"${opName} for areaRq=${rqTxt}")
+		val rqTxt = areaRqIO.toString
+		myLog.info(s"${opName} for areaRqIO=${rqTxt}")
 		// Submit Area request, expecting a Json response-body, which we decode into AreaInfo message, or an error.
-		val areaResultIO: IO[Msg_BackendAreaInfo] = dataSrcCli.expect[Msg_BackendAreaInfo](areaRq)
+		val areaResultIO: IO[Msg_BackendAreaInfo] = dataSrcCli.expect[Msg_BackendAreaInfo](areaRqIO)
 		// Map any exception thrown (during HTTP fetch+decode) into a BackendError, after logging it.
 		val robustAreaIO: IO[Msg_BackendAreaInfo] = areaResultIO.adaptError {
 			case t => {
@@ -73,14 +72,15 @@ class BackendForecastProviderImpl(dataSrcCli: => Client[IO]) extends BackendFore
 		// body directly into our Msg_ types.  Compare with the fetchAreaInfo method above.
 		val forecastJson: IO[Json] = dataSrcCli.expect[Json](forecastRq)
 		// Map any exception thrown (during HTTP fetch+decode) into a BackendError, after logging it.
-		val robustForecastJson: IO[Json] = forecastJson.adaptError {
+		val robustForecastJsonIO: IO[Json] = forecastJson.adaptError {
 			case t => {
 				myLog.error(t)(s"${opName} for ${rqTxt} is handling throwable of type ${t.getClass}")
 				BackendError(opName, rqTxt, t)
 			}
 		}
 		// Extract useful forecast period(s) from the backend JSON
-		val periodForecastIO = robustForecastJson.flatMap(myForecastExtractor.extractFirstPeriodForecast(_))
+		val periodForecastIO: IO[Msg_BackendPeriodForecast] = robustForecastJsonIO.flatMap(
+				myForecastExtractor.extractFirstPeriodForecast(_))
 		periodForecastIO
 	}
 
@@ -96,17 +96,18 @@ private trait BackendRequestBuilder {
 
 	def buildForecastRqFromAreaInfo(areaInfo : Msg_BackendAreaInfo) : IO[Request[IO]] = {
 		// Extract forecastURL from AreaInfo.  Note that these field names match the expected Json.
-		val forcUrlTxt : String = areaInfo.properties.forecast
+		val forecastUrlTxt : String = areaInfo.properties.forecast
 		// Build a new request using the forecastURL, or an error e.g. if the URL is bad.
-		val forcRq: IO[Request[IO]] = totalGetUriRequestWithBodyEffectIO(forcUrlTxt)
-		forcRq
+		val forecastRqIO: IO[Request[IO]] = totalGetUriRequestWithBodyEffectIO(forecastUrlTxt)
+		forecastRqIO
 	}
-	// For a simple GET query, where the uri-parse might fail, with that error suspended in the outer IO.
+	// Build request for a simple GET query, keeping in mind that uri-parse might fail.
 	private def totalGetUriRequestWithBodyEffectIO(uriTxt : String) : IO[Request[IO]] = {
 		val totalUri: ParseResult[Uri] = Uri.fromString(uriTxt) //   type ParseResult[+A] = Either[ParseFailure, A]
-		val x: IO[Uri] = IO.fromEither(totalUri)
-		val rqio: IO[Request[IO]] = x.map(uri => Request[IO](Method.GET, uri))
-		rqio
+		// Any ParseFailure will be absorbed into the IO instance, which short-circuits any downstream effects.
+		val uriIO: IO[Uri] = IO.fromEither(totalUri)
+		val requestIO: IO[Request[IO]] = uriIO.map(uri => Request[IO](Method.GET, uri))
+		requestIO
 	}
 }
 
