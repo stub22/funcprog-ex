@@ -19,10 +19,10 @@ class WeatherRouteSpec extends CatsEffectSuite {
 	}
 	test("check-weather-wpath (for several hardcoded lat,long pairs) returns status code 200") {
 		// Here we sequence several simulated web requests.
-		// These could just as well be separate tests, but it's interesting to see them combined into one IO.
+		// These could just as well be separate tests, but it's interesting to see them combined into one IO effect.
 		val latLonTxt_01 = "39.7456,-97.0892"	// A point in Kansas, USA used as an example in api.weather.gov docs.
 		val latLonTxt_02 = "39.7755,-97.9923"
-		val latLonTxt_03 = "33.2210,-88.0055"	// A point in Alabama, USA that has been failing on 2nd stage lookup
+		val latLonTxt_03 = "33.2214,-88.0055"	// A point in Alabama, USA
 
 		val tstIO_01: IO[Unit] = applyWeatherRouteAndAssertStatusOK(mkWpathUrlForLatLong(latLonTxt_01))
 		val tstIO_02: IO[Unit] = applyWeatherRouteAndAssertStatusOK(mkWpathUrlForLatLong(latLonTxt_02))

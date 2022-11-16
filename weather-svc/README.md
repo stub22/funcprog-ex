@@ -7,14 +7,14 @@ This folder contains a Scala 2.13 project, based on the [http4s-io](https://gith
 This weather-svc serves brief summary weather forecasts, using information fetched from this 
 [National Weather Service API](https://www.weather.gov/documentation/services-web-api) 
 
-This software is written for Scala 2.13.  It has been tested with
+This software is written for the Scala 2.13 platform.  It has been tested with
  * JDK 11 (Graal-VM)
  * SBT 1.7.3
  * Operating System:  Microsoft Windows 10
 
 ### BUILDING AND RUNNING
 
-This project may be built and run using sbt.
+This project may be built and launched using sbt.
 
 One reasonable sequence to build and run is:
 
@@ -28,16 +28,19 @@ You may also run some provided tests (which do not require that our service is r
 
 `sbt test`
 
-Note that these tests access the backend api.weather.gov service.
+Note that these tests access the backend `api.weather.gov` service, which may return different results at different times.
 
 ### ACCESSING THE SERVICE
 
 Our service launches on port 8080.  Changing this port requires modifying the scala code in 
-AppServer.scala (specifically `AppServerBuilder.makeServerResourceForHttpApp`).
+[AppServer.scala](./src/main/scala/com/appstract/fpex/weather/AppServer.scala) (specifically `AppServerBuilder.makeServerResourceForHttpApp`).
 
 The weather-svc offers two different URL endpoints, which may be accessed using HTTP GET.
 
-These endpoints expect different formats for the latitude+longitude arguments.
+These endpoints accept two different formats for the latitude+longitude arguments.
+
+In both cases, our weather-svc simply passes along whatever lat+lon input it is given to the backend api.weather.gov services,
+without performing any validation.
 
 We have not yet attempted to determine how many digits of precision can be supplied without causing an error.
 
@@ -47,7 +50,7 @@ We have not yet attempted to determine how many digits of precision can be suppl
     Query param arguments example
     http://localhost:8080/check-weather-wquery?lat=40.2222&lon=-97.0997
 
-A successful HTTP response will look like this
+A successful HTTP response will looks this
     
     {"messageType":"WEATHER_REPORT","latLonPairTxt":"39.7451,-97.0997","summary":"Sunny","temperatureDescription":"cold"}
 
@@ -59,7 +62,7 @@ If the URL submitted to weather-svc does not match a form that the weather-svc e
 If the URL format is OK, but the weather-svc cannot access the backend weather data for the submitted location, then client will receive a detailed JSON error resonse. This error will look different depending on whether the error occurs in the first stage operation `fetchAreaInfoOrError` or the second stage `fetchCurrentForecastPeriodOrError`.
 
 Below are two example first stage errors from `fetchAreaInfoOrError`.
-The first one reflecting malformed location input. 
+The first one reflects malformed location input. 
 
 Note the backend URL embedded inside the error message.  We have noticed that these backend URLs tend to fail in an intermittent fashion.
 The same location input may lead to success one minute, and an error the next minute!
@@ -74,11 +77,11 @@ An example second stage error from `fetchCurrentForecastPeriodOrError`.  Again, 
 
 ### NOTES ON IMPLEMENTATION
 
-This service is implemented using Typelevel [http4s](https://http4s.org/).
+This service is implemented using Typelevel [http4s](https://http4s.org/) and [cats-effect](https://typelevel.org/cats-effect/).
 
 Our scala code is based on the [http4s-io](https://github.com/http4s/http4s-io.g8) project template.
 
-JSON is encoded+decoded using [Circe](https://circe.github.io/circe/).
+JSON is encoded+decoded using [circe](https://circe.github.io/circe/).
 
 To fetch weather info from the backend api.weather.gov, we use a sequence of two calls
 to the "points" and then "gridpoints" services.  These services are accessed by URLs
@@ -110,4 +113,4 @@ as well as logging information to our service console.
  * `Msg_Xyz` : case classes used to hold HTTP responses have names starting with `Msg_`.  
    * We use this pattern for both backend and frontend responses.
 
- * `JsonEncoder_Xyz` : Json encoding/decoding contexts (using Circe library) start with `JsonEncoder_` or `JsonDecoder_`
+ * `JsonEncoder_Xyz` : Json encoding/decoding contexts (using `circe` library) start with `JsonEncoder_` or `JsonDecoder_`
