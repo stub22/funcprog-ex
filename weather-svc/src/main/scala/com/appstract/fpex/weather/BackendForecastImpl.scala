@@ -27,13 +27,14 @@ class BackendForecastProviderImpl(dataSrcCli: => Client[IO]) extends BackendFore
 	private val myForecastExtractor = new PeriodForecastExtractor {}
 
 	// Main public method for accessing our backend functionality.
+	// When successful it will call BOTH backend services.
 	override def fetchForecastInfoForLatLonTxt (latLonPairTxt : String) : IO[Msg_BackendPeriodForecast] = {
 		val areaRqIO: IO[Request[IO]] = myRequestBuilder.buildAreaInfoGetRqIO(latLonPairTxt)
 		val forecastInfoIO: IO[Msg_BackendPeriodForecast] = chainToAreaInfoThenForecastInfo(areaRqIO)
 		forecastInfoIO
 	}
 
-	// Here we start from a WRAPPED request, that is, an effect.
+	// Here we start from a WRAPPED request (i.e. an IO which can produce a request).
 	private def chainToAreaInfoThenForecastInfo (areaRqIO: IO[Request[IO]]) : IO[Msg_BackendPeriodForecast] = {
 		// Note that each stage is wrapped in IO.  When each of these effects is run, it may encounter errors.
 		// We could instead use a sugary for-comprehension here.

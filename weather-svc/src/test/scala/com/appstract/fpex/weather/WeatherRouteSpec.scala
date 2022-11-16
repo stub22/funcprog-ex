@@ -13,14 +13,12 @@ class WeatherRouteSpec extends CatsEffectSuite {
 
 	private val myLog: Logger = log4s.getLogger
 
-	// Here we have just the beginnings of a smoke test suite.
+	// Rudimentary smoke test suite that runs a few weather queries, but does not really "verify" much.
 	// These tests assume the backend at api.weather.gov is available, so they are testing more than just our software.
-	// This is not a "unit" test suite.  If we added some kind of mock backend, then this could be turned into a unit
-	// test suite.
-	// TODO:  Add more Spec-suites containing unit tests for our internal Api methods.
+	// These are not "unit" tests.
 
 	// Note that even when backend fails we create a successful frontend HTTP Response, so these tests usually
-	// don't "fail".  However we may see ERROR messages in the output log.
+	// don't "fail" (as far as the test runner knows).  However we may see ERROR messages in the output log.
 
 	// TODO:  Consider treating weather-service failures as test failures.
 	// TODO:  Check the contents of the HTTP response body-stream.
