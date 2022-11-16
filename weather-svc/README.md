@@ -24,18 +24,20 @@ One reasonable sequence to build and run is:
 
 Once the server is running you may access it at the URLs described below.
 
-You may also run some provided tests (which do not require that our service is running) using
+When you are finished playing with the service, you will need to kill the running process using `Ctrl-C` or equivalent.
+
+You may also run a few basic tests (which do not require that our service is running) using
 
 `sbt test`
 
-Note that these tests access the backend `api.weather.gov` service, which may return different results at different times.
+Note that these tests do not open up a frontend web service port, but they do access the backend `api.weather.gov` service, which may return different results at different times.
 
 ### ACCESSING THE SERVICE
 
-Our service launches on port 8080.  Changing this port requires modifying the scala code in 
+Our server listens on port 8080.  Changing this port requires modifying the scala code in 
 [AppServer.scala](./src/main/scala/com/appstract/fpex/weather/AppServer.scala) (specifically `AppServerBuilder.makeServerResourceForHttpApp`).
 
-The weather-svc offers two different URL endpoints, which may be accessed using HTTP GET.
+The weather-svc offers two different URL endpoints, which may be accessed using HTTP GET, from a web browser or other HTTP client.
 
 These endpoints accept two different formats for the latitude+longitude arguments.
 
@@ -98,14 +100,14 @@ as well as logging information to our service console.
 
 This service is implemented using Typelevel [http4s](https://http4s.org/) and [cats-effect](https://typelevel.org/cats-effect/).
 
-Our scala code is based on the [http4s-io](https://github.com/http4s/http4s-io.g8) project template.
-All our dependencies come from this template.
-
 JSON is encoded+decoded using [circe](https://circe.github.io/circe/).
+
+Our scala code is based on the [http4s-io](https://github.com/http4s/http4s-io.g8) project template (as of November 2022).
+Our dependencies all came from this template, and have not been modified in our build files.
 
 ### A NOTE ABOUT PURITY
 
-Our scala code is mostly pure in the FP sense, but does impurely use logging side-effects via [log4s](https://github.com/Log4s/log4s).
+Our scala code is mostly pure in the FP sense, but does use impure logging side-effects via [log4s](https://github.com/Log4s/log4s).
 
 ### CODE STYLE CHOICES
 

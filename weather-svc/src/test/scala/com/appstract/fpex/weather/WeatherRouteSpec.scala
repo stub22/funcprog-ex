@@ -13,6 +13,8 @@ class WeatherRouteSpec extends CatsEffectSuite {
 
 	private val myLog: Logger = log4s.getLogger
 
+	// TODO:  Check more than just the returned 
+
 	// Note that even when backend fails we create a successful frontend HTTP Response, so these tests usually
 	// don't "fail".  However we may see ERROR messages in the output log.
 	test("check-weather-wquery (for hardcoded latTxt and lonTxt) returns status code 200") {

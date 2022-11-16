@@ -28,29 +28,30 @@ class BackendForecastProviderImpl(dataSrcCli: => Client[IO]) extends BackendFore
 	private val myForecastExtractor = new PeriodForecastExtractor {}
 
 	override def fetchForecastInfoForLatLonTxt (latLonPairTxt : String) : IO[Msg_BackendPeriodForecast] = {
-		val areaRqIO: IO[Request[IO]] = myRequestBuilder.areaGetRequest(latLonPairTxt)
-		val forecastInfoIO: IO[Msg_BackendPeriodForecast] = fetchAreaInfoThenForecastInfo(areaRqIO)
+		val areaRqIO: IO[Request[IO]] = myRequestBuilder.buildAreaInfoGetRqIO(latLonPairTxt)
+		val forecastInfoIO: IO[Msg_BackendPeriodForecast] = chainToAreaInfoThenForecastInfo(areaRqIO)
 		forecastInfoIO
 	}
 
-	private def fetchAreaInfoThenForecastInfo (areaRqIO: IO[Request[IO]]) : IO[Msg_BackendPeriodForecast] = {
-		// Each of these steps is suspended and may (later) encounter errors.  Notice that each LHS is wrapped in IO.
-		// We could instead use a sugary for-comprehension here.  But we prefer to make types fully explicit at each
-		// step, as long as our code is not TOO verbose.
+	private def chainToAreaInfoThenForecastInfo (areaRqIO: IO[Request[IO]]) : IO[Msg_BackendPeriodForecast] = {
+		// Note that each stage is wrapped in IO.  When each of these effects is run, it may encounter errors.
+		// We could instead use a sugary for-comprehension here.
+		// But we prefer to make the types fully explicit for each step, as long as our code is not TOO verbose.
 		val areaInfoIO: IO[Msg_BackendAreaInfo] = areaRqIO.flatMap(fetchAreaInfoOrError(_))
-		val forecastRqIO: IO[Request[IO]] = areaInfoIO.flatMap(myRequestBuilder.buildForecastRqFromAreaInfo(_))
+		val forecastRqIO: IO[Request[IO]] = areaInfoIO.flatMap(myRequestBuilder.buildForecastRqIoFromAreaInfo(_))
 		val forecastInfoIO: IO[Msg_BackendPeriodForecast] = forecastRqIO.flatMap(fetchCurrentForecastPeriodOrError(_))
 		forecastInfoIO
 	}
 
-	override def fetchAreaInfoOrError(areaRqIO : Request[IO]) : IO[Msg_BackendAreaInfo] = {
+	// Note that here the input is an UNWRAPPED request.
+	override def fetchAreaInfoOrError(areaRq : Request[IO]) : IO[Msg_BackendAreaInfo] = {
 		import cats.implicits._
 		import JsonDecoders_BackendAreaInfo._
 		val opName : String = "fetchAreaInfoOrError"
-		val rqTxt = areaRqIO.toString
-		myLog.info(s"${opName} for areaRqIO=${rqTxt}")
+		val rqTxt = areaRq.toString
+		myLog.info(s"${opName} for areaRq=${rqTxt}")
 		// Submit Area request, expecting a Json response-body, which we decode into AreaInfo message, or an error.
-		val areaResultIO: IO[Msg_BackendAreaInfo] = dataSrcCli.expect[Msg_BackendAreaInfo](areaRqIO)
+		val areaResultIO: IO[Msg_BackendAreaInfo] = dataSrcCli.expect[Msg_BackendAreaInfo](areaRq)
 		// Map any exception thrown (during HTTP fetch+decode) into a BackendError, after logging it.
 		val robustAreaIO: IO[Msg_BackendAreaInfo] = areaResultIO.adaptError {
 			case t => {
@@ -70,9 +71,9 @@ class BackendForecastProviderImpl(dataSrcCli: => Client[IO]) extends BackendFore
 		myLog.info(s"${opName} forecastRq=${rqTxt}")
 		// Submit forecast request, expecting a Json response-body.  Note that we do NOT ask Circe to map this
 		// body directly into our Msg_ types.  Compare with the fetchAreaInfo method above.
-		val forecastJson: IO[Json] = dataSrcCli.expect[Json](forecastRq)
+		val forecastJsonIO: IO[Json] = dataSrcCli.expect[Json](forecastRq)
 		// Map any exception thrown (during HTTP fetch+decode) into a BackendError, after logging it.
-		val robustForecastJsonIO: IO[Json] = forecastJson.adaptError {
+		val robustForecastJsonIO: IO[Json] = forecastJsonIO.adaptError {
 			case t => {
 				myLog.error(t)(s"${opName} for ${rqTxt} is handling throwable of type ${t.getClass}")
 				BackendError(opName, rqTxt, t)
@@ -89,20 +90,23 @@ class BackendForecastProviderImpl(dataSrcCli: => Client[IO]) extends BackendFore
 private trait BackendRequestBuilder {
 	private val POINTS_BASE_URL = "https://api.weather.gov/points/"
 
-	def areaGetRequest(latLonTxt : String) : IO[Request[IO]] = {
+	// Build a request-effect (for the '/points' service) that should result in an AreaInfo JSON response from backend server.
+	def buildAreaInfoGetRqIO(latLonTxt : String) : IO[Request[IO]] = {
 		val fullUriTxt = POINTS_BASE_URL + latLonTxt
-		totalGetUriRequestWithBodyEffectIO(fullUriTxt)
+		buildGetRequestIO(fullUriTxt)
 	}
 
-	def buildForecastRqFromAreaInfo(areaInfo : Msg_BackendAreaInfo) : IO[Request[IO]] = {
+	// Build a request-effect (for the '/gridpoints' service) that should result in an Forecast JSON response from backend server.
+	def buildForecastRqIoFromAreaInfo(areaInfo : Msg_BackendAreaInfo) : IO[Request[IO]] = {
 		// Extract forecastURL from AreaInfo.  Note that these field names match the expected Json.
 		val forecastUrlTxt : String = areaInfo.properties.forecast
-		// Build a new request using the forecastURL, or an error e.g. if the URL is bad.
-		val forecastRqIO: IO[Request[IO]] = totalGetUriRequestWithBodyEffectIO(forecastUrlTxt)
+		// Build a new request using the forecastURL, or an error if something goes wrong, e.g. if the URL is bad.
+		val forecastRqIO: IO[Request[IO]] = buildGetRequestIO(forecastUrlTxt)
 		forecastRqIO
 	}
-	// Build request for a simple GET query, keeping in mind that uri-parse might fail.
-	private def totalGetUriRequestWithBodyEffectIO(uriTxt : String) : IO[Request[IO]] = {
+
+	// Utility method to build request for a simple GET query, keeping in mind that uri-parse might fail.
+	private def buildGetRequestIO(uriTxt : String) : IO[Request[IO]] = {
 		val totalUri: ParseResult[Uri] = Uri.fromString(uriTxt) //   type ParseResult[+A] = Either[ParseFailure, A]
 		// Any ParseFailure will be absorbed into the IO instance, which short-circuits any downstream effects.
 		val uriIO: IO[Uri] = IO.fromEither(totalUri)
@@ -119,8 +123,8 @@ trait PeriodForecastExtractor {
 	 * Our requirements are to supply a toy current-weather feature, without much detail.
 	 * To simplify our coding task, we have chosen to use only the most current forecast period, regardless of day/night.
 	 * However we do capture the isDaytime flag, so that client code may interpret the weather accordingly.
-	 * If needed, we could build a larger data structure to capture multiple periods, but for now
-	 * we assume that returning a single period forecast is sufficient.
+	 * If needed, we could build a larger data structure to capture multiple periods.
+	 * But for now we assume that returning a single period forecast is sufficient.
 	 */
 
 	private val myLog: Logger = log4s.getLogger
