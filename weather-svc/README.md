@@ -4,7 +4,7 @@
 
 This folder contains a Scala 2.13 project, based on the [http4s-io](https://github.com/http4s/http4s-io.g8) giter8 project skeleton.
 
-This weather-svc serves brief summary weather forecasts, using information fetched from this 
+This code implements a standalone HTTP server offering brief summary weather forecasts, using information fetched from this 
 [National Weather Service API](https://www.weather.gov/documentation/services-web-api) 
 
 This software is written for the Scala 2.13 platform.  It has been tested with
@@ -61,7 +61,7 @@ A successful HTTP response will looks this
 
 If the URL submitted to weather-svc does not match a form that the weather-svc expects, the client receives an HTTP 404 Not Found response.
 
-If the URL format is OK, but the weather-svc cannot access the backend weather data for the submitted location, then client will receive a detailed JSON error resonse. This error will look different depending on whether the error occurs in the first stage operation `fetchAreaInfoOrError` or the second stage `fetchCurrentForecastPeriodOrError`.
+If the URL format is OK, but the weather-svc cannot access the backend weather data for the submitted location, then client will receive an OK (Status 200) response whose body contains a detailed JSON error description. This error will look different depending on whether the error occurs in the first stage backend operation `fetchAreaInfoOrError` or the second stage `fetchCurrentForecastPeriodOrError`.
 
 Below are two example first stage errors from `fetchAreaInfoOrError`.
 The first one reflects malformed location input. 
@@ -96,9 +96,29 @@ But one problem we face is that this latter `gridpoints` service often fails int
 When these failures occur, we attempt to return a useful error message to our API user (as a JSON-serialized `Msg_WeatherReport`), 
 as well as logging information to our service console.
 
+### SOURCE FILES OVERVIEW
+
+The server code is implemented in 8 .scala files located in the [com.appstract.fpex.weather](src/main/scala/com/appstract/fpex/weather) package.
+
+We may roughly divide these files into 3 functional groups:
+
+#### Web Server : Launch and Request Handling
+ * AppMain.scala
+ * AppServer.scala
+ * AppWebRoutes.scala
+
+#### Backend Data Fetching and Error Handling
+ * BackendForecastApi.scala
+ * BackendForecastImpl.scala
+
+#### Frontend Weather Report Generation
+ * ReporterApi.scala
+ * ReporterImpl.scala
+ * Temperatures.scala
+
 ### LIBRARIES 
 
-This service is implemented using Typelevel [http4s](https://http4s.org/) and [cats-effect](https://typelevel.org/cats-effect/).
+This server is implemented using Typelevel [http4s](https://http4s.org/) and [cats-effect](https://typelevel.org/cats-effect/).
 
 JSON is encoded+decoded using [circe](https://circe.github.io/circe/).
 
@@ -113,7 +133,7 @@ Our scala code is mostly pure in the FP sense, but does use impure logging side-
 
  * Limited use of scala wildcard imports.  Usually we try to confine these imports to a narrow scope, such as a particular trait or method.
 
- * Limited use of scala "object" singletons. No use of the "Companion" object pattern.
+ * Limited use of scala "object" singletons.  No use of the "Companion Object" pattern.
 
  * Preference for explicit typing and invocations over sugary structures like for-comprehensions.  
 

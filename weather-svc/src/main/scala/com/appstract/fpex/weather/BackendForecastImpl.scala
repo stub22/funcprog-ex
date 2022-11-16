@@ -27,13 +27,14 @@ class BackendForecastProviderImpl(dataSrcCli: => Client[IO]) extends BackendFore
 	private val myForecastExtractor = new PeriodForecastExtractor {}
 
 	// Main public method for accessing our backend functionality.
+	// When successful it will call BOTH backend services.
 	override def fetchForecastInfoForLatLonTxt (latLonPairTxt : String) : IO[Msg_BackendPeriodForecast] = {
 		val areaRqIO: IO[Request[IO]] = myRequestBuilder.buildAreaInfoGetRqIO(latLonPairTxt)
 		val forecastInfoIO: IO[Msg_BackendPeriodForecast] = chainToAreaInfoThenForecastInfo(areaRqIO)
 		forecastInfoIO
 	}
 
-	// Here we start from a WRAPPED request, that is, an effect.
+	// Here we start from a WRAPPED request (i.e. an IO which can produce a request).
 	private def chainToAreaInfoThenForecastInfo (areaRqIO: IO[Request[IO]]) : IO[Msg_BackendPeriodForecast] = {
 		// Note that each stage is wrapped in IO.  When each of these effects is run, it may encounter errors.
 		// We could instead use a sugary for-comprehension here.
@@ -45,8 +46,7 @@ class BackendForecastProviderImpl(dataSrcCli: => Client[IO]) extends BackendFore
 	}
 
 	// Note that here the input is an UNWRAPPED request.
-	// Also note this is a public method (defined in our API trait) which may be used to access other interesting
-	// aspects of the AreaInfo (although we may then also need to add more fields to Msg_BackendAreaInfo).
+	// Also note this is a public method (defined in our API trait).
 	override def fetchAreaInfoOrError(areaRq : Request[IO]) : IO[Msg_BackendAreaInfo] = {
 		import cats.implicits._
 		import JsonDecoders_BackendAreaInfo._
@@ -88,7 +88,6 @@ class BackendForecastProviderImpl(dataSrcCli: => Client[IO]) extends BackendFore
 				myForecastExtractor.extractFirstPeriodForecast(_))
 		periodForecastIO
 	}
-
 }
 
 private trait BackendRequestBuilder {
@@ -168,8 +167,9 @@ trait PeriodForecastExtractor {
 }
 
 /***
-
-Fragment of an example JSON response from the api.weather.gov/gridpoints service, showing a sequencew of
+Example of JSON to be navigated.
+Here is a fragment of an example JSON response from the api.weather.gov/gridpoints service,
+containing a sequence of forecast periods.
 
 "properties": {
       "periods": [
