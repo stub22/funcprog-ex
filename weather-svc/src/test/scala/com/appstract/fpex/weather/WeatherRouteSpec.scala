@@ -13,34 +13,43 @@ class WeatherRouteSpec extends CatsEffectSuite {
 
 	private val myLog: Logger = log4s.getLogger
 
-	// TODO:  Check more than just the returned
+	// Here we have just the beginnings of a smoke test suite.
+	// These tests assume the backend at api.weather.gov is available, so they are testing more than just our software.
+	// This is not a "unit" test suite.  If we added some kind of mock backend, then this could be turned into a unit
+	// test suite.
+	// TODO:  Add more Spec-suites containing unit tests for our internal Api methods.
 
 	// Note that even when backend fails we create a successful frontend HTTP Response, so these tests usually
 	// don't "fail".  However we may see ERROR messages in the output log.
+
+	// TODO:  Consider treating weather-service failures as test failures.
+	// TODO:  Check the contents of the HTTP response body-stream.
+
+	// TODO:  Add cases testing failure of bad input URLs.
+
+	// TODO:  Explore the boundaries of what is a legitimate lat,lon pair.
+	// TODO:  Consider testing with some randomly generated lat,lon pairs.
+
 	test("check-weather-wquery (for hardcoded latTxt and lonTxt) returns status code 200") {
 		val weatherUrlPath = mkWqryUrlForLatLong("39.7456", "-97.0892")
 		applyWeatherRouteAndAssertStatusOK(weatherUrlPath)
 	}
-	test("check-weather-wpath (for several hardcoded lat,long pairs) returns status code 200") {
-		// Here we sequence several simulated web requests into a single test.
-		val latLonTxt_01 = "39.7456,-97.0892"	// A point in Kansas, USA used as an example in api.weather.gov docs.
-		val latLonTxt_02 = "39.7755,-97.9923"
-		val latLonTxt_03 = "33.2214,-88.0055"	// A point in Alabama, USA
+	test("check-weather-wpath (for a sequence hardcoded lat,long pairs) returns status code 200") {
+		// Here we sequence several simulated web requests into a single test-case.
+		val latLonTxt_01 = "39.7456,-97.0892"	// Point in Kansas, USA used as an example in api.weather.gov docs.
+		val latLonTxt_02 = "39.7255,-97.4923"	// Random spot sorta close by (also in Kansas).
+		val latLonTxt_03 = "33.2214,-88.0055"	// Random spot in Alabama, USA
+		// Hmm, did we see a point in Panama work one time?
+		val latLonTxt_04 = "8.995929,-79.5733"	// Point near Panama City, Panama.   Backend (always?) returns 301 Moved Permanently
+		// TODO:  Try out more spots on the globe.
 
-		val tstIO_01: IO[Unit] = applyWeatherRouteAndAssertStatusOK(mkWpathUrlForLatLong(latLonTxt_01))
-		val tstIO_02: IO[Unit] = applyWeatherRouteAndAssertStatusOK(mkWpathUrlForLatLong(latLonTxt_02))
-		val tstIO_03: IO[Unit] = applyWeatherRouteAndAssertStatusOK(mkWpathUrlForLatLong(latLonTxt_03))
-
+		val points = List[String](latLonTxt_01, latLonTxt_02, latLonTxt_03, latLonTxt_04)
+		val urls: List[String] = points.map(mkWpathUrlForLatLong(_))
+		val checkers: List[IO[Unit]] = urls.map(applyWeatherRouteAndAssertStatusOK(_))
 		import cats.implicits._
-		// Combine our three test scenarios into a List, then turn that into a single IO[List] which we can return
-		// to the munit harness to be executed.
-		val tstList: List[IO[Unit]] = List(tstIO_01, tstIO_02, tstIO_03)
-		val tstSeq: IO[List[Unit]] = tstList.sequence
-		tstSeq
+		val seqChecker : IO[List[Unit]] = checkers.sequence
+		seqChecker
 	}
-
-	// TODO:  Explore the boundaries of what is a legitimate lat,lon pair.
-	// TODO:  Consider testing with some randomly generated lat,lon pairs.
 
 	private def mkWpathUrlForLatLong(latLongPairTxt : String) : String = {
 		s"/${myRoutes.OP_NAME_WEATHER_WPATH}/${latLongPairTxt}"
@@ -54,7 +63,6 @@ class WeatherRouteSpec extends CatsEffectSuite {
 		val weatherRespIO: IO[Response[IO]] = applyWeatherRoute(weatherUrlPath)
 		// When run, asserts that the response-effect (upon being run) produces HTTP Status OK (200).
 		val assertionEffect: IO[Unit] = assertIO(weatherRespIO.map(resp => {
-			// TODO:  Optionally pull and dump the contents of the response body-stream.
 			myLog.info(s"XXXXXXXXXXXXXXXX  Route for ${weatherUrlPath} Got Response=${resp}, Response.Body=${resp.body}")
 			resp.status
 		}), Status.Ok)
@@ -69,7 +77,11 @@ class WeatherRouteSpec extends CatsEffectSuite {
 		val weatherUri: Uri = Uri.unsafeFromString(weatherUrlPath)
 		myLog.info(s"WeatherRouteSpec.invokeForecastRoute made test-weather-uri: ${weatherUri}")
 		val requestIO: Request[IO] = Request[IO](Method.GET, weatherUri)
+
+		// Using this real web client means we are not doing "unit" testing here.
 		val embCliRsrc: Resource[IO, Client[IO]] = EmberClientBuilder.default[IO].build
+
+		// Prepare to build our own web route to execute.
 		val routeResource: Resource[IO, HttpRoutes[IO]] = for {
 			cli <- embCliRsrc
 			forecastSupp: WeatherReportSupplier = new WeatherReportSupplierImpl(cli)
