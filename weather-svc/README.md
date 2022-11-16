@@ -39,9 +39,9 @@ Our server listens on port 8080.  Changing this port requires modifying the scal
 
 The weather-svc offers two different URL endpoints, which may be accessed using HTTP GET, from a web browser or other HTTP client.
 
-These endpoints accept two different formats for the latitude+longitude arguments.
+These two URL endpoints accept two different formats for the latitude+longitude arguments.
 
-In both cases, our weather-svc simply passes along whatever lat+lon input it is given to the backend api.weather.gov services,
+In both cases, our weather-svc simply passes along whatever lat+lon input it is given to the backend `api.weather.gov` services,
 without performing any validation.
 
 We have not yet attempted to determine how many digits of precision can be supplied without causing an error.
@@ -105,7 +105,7 @@ JSON is encoded+decoded using [circe](https://circe.github.io/circe/).
 Our scala code is based on the [http4s-io](https://github.com/http4s/http4s-io.g8) project template (as of November 2022).
 Our dependencies all came from this template, and have not been modified in our build files.
 
-### A NOTE ABOUT PURITY
+### Regarding Purity
 
 Our scala code is mostly pure in the FP sense, but does use impure logging side-effects via [log4s](https://github.com/Log4s/log4s).
 

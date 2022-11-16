@@ -8,7 +8,6 @@ import org.http4s.client.Client
 import org.log4s
 import org.log4s.{Logger}
 
-
 private object JsonDecoders_BackendAreaInfo {
 	// Circe decoder bindings for building Msg_AreaInfo* from JSON tree.
 	// These implicits could instead be defined locally in the BackendForecastProviderImpl,
@@ -27,12 +26,14 @@ class BackendForecastProviderImpl(dataSrcCli: => Client[IO]) extends BackendFore
 	private val myRequestBuilder = new BackendRequestBuilder {}
 	private val myForecastExtractor = new PeriodForecastExtractor {}
 
+	// Main public method for accessing our backend functionality.
 	override def fetchForecastInfoForLatLonTxt (latLonPairTxt : String) : IO[Msg_BackendPeriodForecast] = {
 		val areaRqIO: IO[Request[IO]] = myRequestBuilder.buildAreaInfoGetRqIO(latLonPairTxt)
 		val forecastInfoIO: IO[Msg_BackendPeriodForecast] = chainToAreaInfoThenForecastInfo(areaRqIO)
 		forecastInfoIO
 	}
 
+	// Here we start from a WRAPPED request, that is, an effect.
 	private def chainToAreaInfoThenForecastInfo (areaRqIO: IO[Request[IO]]) : IO[Msg_BackendPeriodForecast] = {
 		// Note that each stage is wrapped in IO.  When each of these effects is run, it may encounter errors.
 		// We could instead use a sugary for-comprehension here.
@@ -44,6 +45,8 @@ class BackendForecastProviderImpl(dataSrcCli: => Client[IO]) extends BackendFore
 	}
 
 	// Note that here the input is an UNWRAPPED request.
+	// Also note this is a public method (defined in our API trait) which may be used to access other interesting
+	// aspects of the AreaInfo (although we may then also need to add more fields to Msg_BackendAreaInfo).
 	override def fetchAreaInfoOrError(areaRq : Request[IO]) : IO[Msg_BackendAreaInfo] = {
 		import cats.implicits._
 		import JsonDecoders_BackendAreaInfo._
@@ -62,6 +65,7 @@ class BackendForecastProviderImpl(dataSrcCli: => Client[IO]) extends BackendFore
 		robustAreaIO
 	}
 
+	// Again here the input is an UNWRAPPED request.
 	private def fetchCurrentForecastPeriodOrError(forecastRq : Request[IO]) : IO[Msg_BackendPeriodForecast] = {
 		import cats.implicits._
 		// Bring generic EntityDecoder[Json] implicits into scope
@@ -98,15 +102,16 @@ private trait BackendRequestBuilder {
 
 	// Build a request-effect (for the '/gridpoints' service) that should result in an Forecast JSON response from backend server.
 	def buildForecastRqIoFromAreaInfo(areaInfo : Msg_BackendAreaInfo) : IO[Request[IO]] = {
-		// Extract forecastURL from AreaInfo.  Note that these field names match the expected Json.
+		// Extract forecastURL from AreaInfo.  Note that these scala field names match the expected Json field names.
 		val forecastUrlTxt : String = areaInfo.properties.forecast
 		// Build a new request using the forecastURL, or an error if something goes wrong, e.g. if the URL is bad.
 		val forecastRqIO: IO[Request[IO]] = buildGetRequestIO(forecastUrlTxt)
 		forecastRqIO
 	}
 
-	// Utility method to build request for a simple GET query, keeping in mind that uri-parse might fail.
+	// Utility method to build HTTP Request for a simple GET query, keeping in mind that uri-parse might fail.
 	private def buildGetRequestIO(uriTxt : String) : IO[Request[IO]] = {
+		// "total" meaning "not partial", i.e. all failures are encompassed as variations of ParseResult.
 		val totalUri: ParseResult[Uri] = Uri.fromString(uriTxt) //   type ParseResult[+A] = Either[ParseFailure, A]
 		// Any ParseFailure will be absorbed into the IO instance, which short-circuits any downstream effects.
 		val uriIO: IO[Uri] = IO.fromEither(totalUri)
@@ -117,8 +122,8 @@ private trait BackendRequestBuilder {
 
 trait PeriodForecastExtractor {
 	/***
-	 * Empirically, we observed that the backend provides a time-ordered sequence of forecast `periods`, alternating between
-	 * "daytime" and "nightime" (indicated by the 'isDaytime' flag in each `period` record).
+	 * Empirically, we observed that the backend provides a time-ordered sequence of forecast `periods`, alternating
+	 * between "daytime" and "nightime" (indicated by the 'isDaytime' flag in each `period` record).
 	 *
 	 * Our requirements are to supply a toy current-weather feature, without much detail.
 	 * To simplify our coding task, we have chosen to use only the most current forecast period, regardless of day/night.

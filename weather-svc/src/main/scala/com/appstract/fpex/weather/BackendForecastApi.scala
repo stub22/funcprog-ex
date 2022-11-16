@@ -6,7 +6,8 @@ import org.http4s.Request
 /***
  * Backend weather API docs:
  * https://www.weather.gov/documentation/services-web-api
- * See our project README.md for more background/
+ * See our project README.md for more background.
+ * Also see quote from weather.gov docs at bottom of this file.
  *
  * Example URL for the "points" service, with lat,long at the end of the PATH (not as query params).
  * https://api.weather.gov/points/39.7456,-97.0892
@@ -26,12 +27,11 @@ import org.http4s.Request
  * Msg_AreaInfo type holds result from backend weather service "points".
  *
  * The AreaInfo json contains a "properties" map, containing a "forecast" value, which is a URL for local forecast info.
- * We use this URL to fetch a large blob of Json containing multiple forecast periods.
+ * We use this followup URL to GET from backend a large blob of Json containing multiple forecast periods.
  * We decode that Json to produce one or more Msg_BackendPeriodForecast instances.
  * Currently we assume that only the first period instance (which is the most-current forecast) is relevant.
  *
- * We name these types with the "Backend" prefix to clearly distinguish them from our frontend Weather API.
- *
+ * We name these types with the "Backend" prefix, to clearly distinguish them from our frontend Weather API types.
  */
 // Msg_BackendAreaInfo is our structure matching the json entity returned from https://api.weather.gov/points/
 case class Msg_BackendAreaInfo(properties : Msg_BackendAreaProps)
@@ -55,9 +55,11 @@ case class BackendError(opName: String, opArgs: String, exc: Throwable) extends 
 
 // Internal API trait exposing useful features of the backend forecast service.
 trait BackendForecastProvider {
-	// This "fetchForecastInfoForLatLonTxt" method is our primary access point for the backend.
+	// This "fetchForecastInfoForLatLonTxt" method is our primary method for accessing the backend.
 	// SHORTCUT:  latLonTxt is in the comma separated lat-long format used by the backend weather service,
 	// e.g. "39.7456,-97.0892".
+	// The resulting effect will attempt to access BOTH of the backend services (in sequence) to produce a useful
+	// forecast-period result.  This sequencing demonstrates functional composition of effects!
 	// The returned IO may fail when it is run, in which case it should produce a BackendError.
 	def fetchForecastInfoForLatLonTxt (latLonPairTxt : String) : IO[Msg_BackendPeriodForecast]
 
@@ -68,8 +70,9 @@ trait BackendForecastProvider {
 }
 
 /***
- * From "Examples" tab at https://www.weather.gov/documentation/services-web-api
- * How do I get the forecast?
+ * Quoting from "Examples" tab at https://www.weather.gov/documentation/services-web-api
+ * ===================================================================================
+ * "How do I get the forecast?
  * Forecasts are divided into 2.5km grids.
  * Each NWS office is responsible for a section of the grid.
  * The API endpoint for the forecast at a specific grid is:
@@ -82,5 +85,5 @@ trait BackendForecastProvider {
  * This will return the grid endpoint in the "forecast" property. Applications may cache the grid for a location
  * to improve latency and reduce the additional lookup request.
  * This endpoint also tells the application where to
- * find information for issuing office, observation stations, and zones.
+ * find information for issuing office, observation stations, and zones."
  */
