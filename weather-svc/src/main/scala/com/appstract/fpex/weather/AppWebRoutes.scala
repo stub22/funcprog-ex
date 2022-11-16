@@ -13,7 +13,7 @@ trait AppWebRoutes {
 	val OP_NAME_WEATHER_WPATH = "check-weather-wpath"  	// WPATH means "with path argument"
 	val OP_NAME_WEATHER_WQUERY = "check-weather-wquery" // WQUERY means "with query arguments"
 
-	// Lat,Lon may come in as query parameters. See WQUERY route below.
+	// Lat,Lon may come in as query parameters. See OP_NAME_WEATHER_WQUERY route below.
 	private object QPM_Latitude extends QueryParamDecoderMatcher[String]("lat")
 	private object QPM_Longitude extends QueryParamDecoderMatcher[String]("lon")
 
@@ -38,7 +38,8 @@ trait AppWebRoutes {
 					resp: Response[IO] <- weatherOutputMsgToWebResponse(wrprtOrErr)
 				} yield resp
 			}
-			// Use default HTTP4S error handling for malformed input URLs.
+			// Malformed input URLs which do not match the patterns above are handled elsewhere.
+			// See AppServerBuilder.makeAppRoutesKleisli.
 		}
 	}
 
@@ -46,9 +47,9 @@ trait AppWebRoutes {
 		import JsonEncoders_Report._
 		myLog.info(s"weatherOutputMsgToWebResponse is mapping output message ${msg} to HTTP response")
 		msg match {
-			// When we encounter backend errors, we choose to return HTTP status=OK (200) with a body containing a JSON
-			// description of the error.  To return an HTTP error instead, change the "Left" mapping here.
-			// Note that bad HTTP input, such as a malformed URL, is not handled here.
+			// When we encounter backend errors, our frontend returns HTTP status=OK (200) with a body containing a
+			// JSON description of the error.  To return an HTTP error instead, change the "Left" mapping here.
+			// Note that bad frontend HTTP input, such as a malformed input URL, is not handled here.
 			case Left(err) => Ok(err)
 			case Right(report) => Ok(report)
 		}

@@ -12,7 +12,7 @@ object AppMain extends IOApp.Simple {
 		val appServerBuilder = new AppServerBuilder{}
 		log.info("AppMain.run: invoking .makeAppServerIO to build a runnable server effect")
 		val appServerIO: IO[Nothing] = appServerBuilder.makeAppServerIO
-		log.info("AppMain.run built server IO effect, returning to IoApp to be executed: " + appServerIO)
+		log.info("AppMain.run built our server IO effect. Now returning it to IoApp to be executed: " + appServerIO)
 		appServerIO
 	}
 }

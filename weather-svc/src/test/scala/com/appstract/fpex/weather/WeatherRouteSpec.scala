@@ -13,23 +13,26 @@ class WeatherRouteSpec extends CatsEffectSuite {
 
 	private val myLog: Logger = log4s.getLogger
 
+	// TODO:  Check more than just the returned
+
+	// Note that even when backend fails we create a successful frontend HTTP Response, so these tests usually
+	// don't "fail".  However we may see ERROR messages in the output log.
 	test("check-weather-wquery (for hardcoded latTxt and lonTxt) returns status code 200") {
 		val weatherUrlPath = mkWqryUrlForLatLong("39.7456", "-97.0892")
 		applyWeatherRouteAndAssertStatusOK(weatherUrlPath)
 	}
 	test("check-weather-wpath (for several hardcoded lat,long pairs) returns status code 200") {
-		// Here we sequence several simulated web requests.
-		// These could just as well be separate tests, but it's interesting to see them combined into one IO.
+		// Here we sequence several simulated web requests into a single test.
 		val latLonTxt_01 = "39.7456,-97.0892"	// A point in Kansas, USA used as an example in api.weather.gov docs.
 		val latLonTxt_02 = "39.7755,-97.9923"
-		val latLonTxt_03 = "33.2210,-88.0055"	// A point in Alabama, USA that has been failing on 2nd stage lookup
+		val latLonTxt_03 = "33.2214,-88.0055"	// A point in Alabama, USA
 
 		val tstIO_01: IO[Unit] = applyWeatherRouteAndAssertStatusOK(mkWpathUrlForLatLong(latLonTxt_01))
 		val tstIO_02: IO[Unit] = applyWeatherRouteAndAssertStatusOK(mkWpathUrlForLatLong(latLonTxt_02))
 		val tstIO_03: IO[Unit] = applyWeatherRouteAndAssertStatusOK(mkWpathUrlForLatLong(latLonTxt_03))
 
 		import cats.implicits._
-		// Combine the three test scenarios into a List, then turn that into a single IO[List] which we can return
+		// Combine our three test scenarios into a List, then turn that into a single IO[List] which we can return
 		// to the munit harness to be executed.
 		val tstList: List[IO[Unit]] = List(tstIO_01, tstIO_02, tstIO_03)
 		val tstSeq: IO[List[Unit]] = tstList.sequence
@@ -49,7 +52,7 @@ class WeatherRouteSpec extends CatsEffectSuite {
 
 	private def applyWeatherRouteAndAssertStatusOK(weatherUrlPath : String) : IO[Unit] = {
 		val weatherRespIO: IO[Response[IO]] = applyWeatherRoute(weatherUrlPath)
-		// When run, asserts that the response-effect produces HTTP Status OK (200).
+		// When run, asserts that the response-effect (upon being run) produces HTTP Status OK (200).
 		val assertionEffect: IO[Unit] = assertIO(weatherRespIO.map(resp => {
 			// TODO:  Optionally pull and dump the contents of the response body-stream.
 			myLog.info(s"XXXXXXXXXXXXXXXX  Route for ${weatherUrlPath} Got Response=${resp}, Response.Body=${resp.body}")
