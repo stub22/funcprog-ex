@@ -16,6 +16,7 @@ class WeatherReportSupplierImpl(dataSrcCli: => Client[IO]) extends WeatherReport
 	override def fetchWeatherForLatLon(latTxt : String, lonTxt : String) : IO[WReportOrErr] = {
 		myLog.info(s"fetchWeatherForLatLon(lat=${latTxt}, lon=${lonTxt}")
 		// TODO:  Validate input values.  On failure, should produce a validation error and prevent any further work.
+		// Concatenate the lat,lon into the same format used by api.weather.gov backend.
 		val latLonPairTxt = s"${latTxt},${lonTxt}"
 		fetchWeatherForLatLonPairTxt(latLonPairTxt)
 	}
@@ -24,7 +25,8 @@ class WeatherReportSupplierImpl(dataSrcCli: => Client[IO]) extends WeatherReport
 	override def fetchWeatherForLatLonPairTxt(latLonPairTxt : String) : IO[WReportOrErr] = {
 		val forecastInfoIO: IO[Msg_BackendPeriodForecast] = myBFP.fetchForecastInfoForLatLonTxt(latLonPairTxt)
 		val reportIO: IO[Msg_WeatherReport] = forecastInfoIO.map(buildWeatherReport(latLonPairTxt, _))
-		buildOutputMessageIO(reportIO, latLonPairTxt)
+		// Translate any possible result from reportIO into a message (successful or error) we can output as JSON.
+		reportIO.redeem(errorToLeftResult(latLonPairTxt, _), reportToRightResult(_))
 	}
 
 	private def buildWeatherReport(latLonPairTxt : String, backendForecast : Msg_BackendPeriodForecast) : Msg_WeatherReport  = {
@@ -35,14 +37,9 @@ class WeatherReportSupplierImpl(dataSrcCli: => Client[IO]) extends WeatherReport
 		report
 	}
 
-	// Translate any possible result from reportIO into a message (successful or error) we can output as JSON.
-	// geoLoc contains a text description of the location; it is currently the same as a latLonPairTxt.
-	private def buildOutputMessageIO(reportIO : IO[Msg_WeatherReport], geoLoc : String) : IO[WReportOrErr] = {
-		reportIO.redeem(errorToLeftResult(geoLoc, _), reportToRightResult(_))
-	}
-
 	private def reportToRightResult(report : Msg_WeatherReport) : WReportOrErr = Right(report)
 
+	// geoLoc contains a text description of the location; it is currently the same as a latLonPairTxt.
 	private def errorToLeftResult(geoLoc : String, t : Throwable) : WReportOrErr = Left(exceptToWeatherErr(geoLoc, t))
 
 	private def exceptToWeatherErr(geoLoc : String, t : Throwable): Msg_WeatherError = {
