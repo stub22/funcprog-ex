@@ -52,8 +52,6 @@ trait PeriodForecastExtractor {
 		val p0Rec_orFailure: Decoder.Result[Msg_BackendPeriodForecast] = p0Json.map(_.as[Msg_BackendPeriodForecast])
 				.getOrElse(Left(DecodingFailure("Could not focus on period[0]", pCurs0.history)))
 		p0Rec_orFailure
-		// val decoded0_IO: IO[Msg_BackendPeriodForecast] = IO.fromEither(p0Rec_orFailure)
-		// decoded0_IO
 	}
 }
 

@@ -3,7 +3,7 @@ package com.appstract.fpex.weather.impl.backend
 import cats.data.EitherT
 import cats.effect.IO
 import com.appstract.fpex.weather.api._
-import com.appstract.fpex.weather.api.backend.{Msg_BackendAreaInfo, Msg_BackendAreaProps, OldeBackendError}
+import com.appstract.fpex.weather.api.backend.{Msg_BackendAreaInfo, Msg_BackendAreaProps}
 import io.circe._
 import io.circe.generic.semiauto.deriveDecoder
 import org.http4s.EntityDecoder
@@ -21,7 +21,7 @@ private object JsonDecoders_BackendAreaInfo {
 }
 
 trait BackendResponseMapper {
-
+/*
 	private def wrapAndLogErrors[MsgT](eff: IO[MsgT], opName: String, rqTxt: => String): EitherT[IO, OldeBackendError, MsgT] = {
 		val eitherEff: IO[Either[Throwable, MsgT]] = eff.attempt
 		val eithT = EitherT(eitherEff)
@@ -36,4 +36,6 @@ trait BackendResponseMapper {
 		})
 		loggedEff
 	}
+
+ */
 }

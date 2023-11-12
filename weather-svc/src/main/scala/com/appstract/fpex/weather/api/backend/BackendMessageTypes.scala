@@ -39,6 +39,8 @@ case class DataFetchError(opName: String, opArgs: String, exc: Throwable) extend
 // TODO: Define a snazzy way to summarize the input data that we failed on.
 case class DataDecodeFailure(opName: String, opArgs: String, exc: Throwable) extends OurBackendError
 
+
+/*
 // Because this error type extends Throwable, we are able to capture and map it using the implied error pathway of
 // the cats-effect IO.
 // Note that this type does NOT need to be serialized to/from JSON.
@@ -48,3 +50,4 @@ case class OldeBackendError(opName: String, opArgs: String, exc: Throwable) exte
 	override def asText : String = s"BackendError(opName=${opName}, opArgs=${opArgs}, exc=${exc})"
 }
 
+*/

@@ -46,24 +46,14 @@ class WeatherReportSupplierImpl(dataSrcCli: => Client[IO]) extends WeatherReport
 
 	// latLonTxt is in the comma separated lat-long format used by the backend weather service, e.g. "39.7456,-97.0892"
 	override def fetchWeatherForLatLonPairTxt(latLonPairTxt : String) : IO[WReportOrErr] = {
-		if (false) {
-			val forecastInfoIO: IO[Msg_BackendPeriodForecast] = myBFP.oldeFetchForecastInfoForLatLonTxt(latLonPairTxt)
-			val reportIO: IO[Msg_WeatherReport] = forecastInfoIO.map(buildWeatherReport(latLonPairTxt, _))
-			// Translate any possible result from reportIO into a message (successful or error) we can output as JSON.
-			reportIO.redeem(err => Left(exceptToWeatherErr(latLonPairTxt, err)), Right(_))
-			// Equivalent:  reportIO.attempt.map(_.left.map(exceptToWeatherErr(latLonPairTxt, _)))
-		}
-		else {
-			val x: BackendETIO[Msg_BackendPeriodForecast] = myBFP.fetchAndExtractPeriodForecast(latLonPairTxt)
-			// val r: EitherT[IO, OurBackendError, Msg_WeatherReport] = x.map(buildWeatherReport(latLonPairTxt, _))
-			// val re: IO[Either[OurBackendError, Msg_WeatherReport]] = r.value
-			val b = x.bimap(backendErrToWeatherErr(latLonPairTxt, _), buildWeatherReport(latLonPairTxt, _))
-			// val be: IO[Either[Msg_WeatherError, Msg_WeatherReport]] = b.value
-			val w : IO[WReportOrErr] = b.value
-			w
-		}
 
-
+		myLog.info("************************** Using new EitherT stuff ")
+		val forecastETIO: BackendETIO[Msg_BackendPeriodForecast] = myBFP.fetchAndExtractPeriodForecast(latLonPairTxt)
+		val wreportETIO: EitherT[IO, Msg_WeatherError, Msg_WeatherReport] = forecastETIO.bimap(
+				backendErrToWeatherErr(latLonPairTxt, _), 	// Mapping the Left-Error case
+				buildWeatherReport(latLonPairTxt, _))		// Mapping the Right-Success case
+		val wreportIO : IO[WReportOrErr] = wreportETIO.value
+		wreportIO
 	}
 
 	private def buildWeatherReport(latLonPairTxt : String, backendForecast : Msg_BackendPeriodForecast) : Msg_WeatherReport  = {
@@ -73,13 +63,15 @@ class WeatherReportSupplierImpl(dataSrcCli: => Client[IO]) extends WeatherReport
 		myLog.info(s"buildWeatherReport made report: ${report}")
 		report
 	}
-
+/*
 	private def exceptToWeatherErr(latLonTxt : String, t : Throwable): Msg_WeatherError = {
 		t match {
 			case backendErr : OurBackendError => backendErrToWeatherErr(latLonTxt, backendErr)
 			case other => Msg_WeatherError(MTYPE_ERROR, latLonTxt, "OTHER_ERR", other.toString)
 		}
 	}
+
+ */
 	private def backendErrToWeatherErr(latLonTxt : String, backendErr : OurBackendError) : Msg_WeatherError = {
 		Msg_WeatherError(MTYPE_ERROR, latLonTxt, "BACKEND_ERR", backendErr.asText)
 	}
