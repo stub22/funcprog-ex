@@ -2,6 +2,9 @@ package com.appstract.fpex.weather
 
 import munit.CatsEffectSuite
 import cats.effect.{IO, Resource}
+import com.appstract.fpex.weather.api.WeatherReportSupplier
+import com.appstract.fpex.weather.impl.WeatherReportSupplierImpl
+import com.appstract.fpex.weather.main.AppWebRoutes
 import org.http4s.{HttpRoutes, Method, Request, Response, Status, Uri}
 import org.http4s.client.Client
 import org.http4s.ember.client.EmberClientBuilder
@@ -47,6 +50,7 @@ class WeatherHttpIntegrationSuite extends CatsEffectSuite {
 		val points = List[String](latLonTxt_01, latLonTxt_02, latLonTxt_03, latLonTxt_04)
 		val urls: List[String] = points.map(mkWpathUrlForLatLong(_))
 		val checkers: List[IO[Unit]] = urls.map(applyWeatherRouteAndAssertStatusOK(_))
+
 		import cats.implicits._
 		val seqChecker : IO[List[Unit]] = checkers.sequence
 		seqChecker
@@ -79,7 +83,7 @@ class WeatherHttpIntegrationSuite extends CatsEffectSuite {
 		myLog.info(s"WeatherRouteSpec.invokeForecastRoute made test-weather-uri: ${weatherUri}")
 		val requestIO: Request[IO] = Request[IO](Method.GET, weatherUri)
 
-		// Using this real web client means we are not doing "unit" testing here.
+		// Setup a real web client.  Remember we are NOT doing 'unit' testing here!
 		val embCliRsrc: Resource[IO, Client[IO]] = EmberClientBuilder.default[IO].build
 
 		// Prepare to build our own web route to execute.
