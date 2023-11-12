@@ -1,7 +1,7 @@
 package com.appstract.fpex.weather.impl.report
 
 import com.appstract.fpex.weather.api.report.TempRangeNames._
-import com.appstract.fpex.weather.api.report.TemperatureInterpreter
+import com.appstract.fpex.weather.api.report.TemperatureClassifier
 
 /**
  * This file includes both API and Impl for a feature that interprets temperatures.
@@ -23,7 +23,7 @@ private case class TempRange(name : String, scale : TempScale, minTemp_opt : Opt
 }
 
 
-class TempInterpImpl extends TemperatureInterpreter {
+class TemperClassifierImpl extends TemperatureClassifier {
 
 	// These constant values which are used multiple times in describing temperature ranges for day and night.
 	// Here "MAX_F" means max degrees Fahrenheit.
@@ -52,7 +52,7 @@ class TempInterpImpl extends TemperatureInterpreter {
 	)
 
 	// Implements our requirement to describe a temperature with a single word.
-	override def describeTempFahrenheit(tempF : Float, flg_isDaytime : Boolean) : TempRangeName = {
+	override def findFahrenheitTempRange(tempF : Float, flg_isDaytime : Boolean) : TempRangeName = {
 		val firstMatchingRange: Option[TempRange] = if (flg_isDaytime) {
 			// Interpret tempF as a daytime temperature
 			rangesDayF.find(_.containsTemp(tempF))

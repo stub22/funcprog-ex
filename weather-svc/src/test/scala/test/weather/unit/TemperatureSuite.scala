@@ -1,12 +1,12 @@
 package test.weather.unit
 
 import com.appstract.fpex.weather.api.report.TempRangeNames._
-import com.appstract.fpex.weather.api.report.TemperatureInterpreter
-import com.appstract.fpex.weather.impl.report.TempInterpImpl
+import com.appstract.fpex.weather.api.report.TemperatureClassifier
+import com.appstract.fpex.weather.impl.report.TemperClassifierImpl
 import munit.CatsEffectSuite
 
 class TemperatureSuite extends CatsEffectSuite {
-	private lazy val myInterp : TemperatureInterpreter = new TempInterpImpl()
+	private lazy val myInterp : TemperatureClassifier = new TemperClassifierImpl()
 
 	test("check-some-temperature-descriptions") {
 		checkTempDesc(39.1f, false,  Some(COLD))
@@ -27,7 +27,7 @@ class TemperatureSuite extends CatsEffectSuite {
 		})
 	}
 	private def checkTempDesc(tempF : Float, flg_daytime : Boolean, expectedDesc_opt : Option[TempRangeName]): Unit = {
-		val desc =  myInterp.describeTempFahrenheit(tempF, flg_daytime)
+		val desc =  myInterp.findFahrenheitTempRange(tempF, flg_daytime)
 		println(s"tempF=${tempF}, daytime=${flg_daytime}, output=${desc}, expected=${expectedDesc_opt}")
 		expectedDesc_opt.foreach(exp => assertEquals(desc, exp))
 	}

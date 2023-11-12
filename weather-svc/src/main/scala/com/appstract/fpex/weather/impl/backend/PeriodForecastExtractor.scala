@@ -27,8 +27,8 @@ trait PeriodForecastExtractor {
 	// To find that leaf record we use explicit Circe cursor navigation.
 
 	def extractFirstPeriodForecast(forecastJson: Json): Either[DecodingFailure, Msg_BackendPeriodForecast] = { // IO[Msg_BackendPeriodForecast]  = {
-		val flg_dumpJson = false
-		if (flg_dumpJson) {
+		val (flg_dumpFullJson, flg_dumpPeriodJson) = (false, false)
+		if (flg_dumpFullJson) {
 			val jsonTxt = forecastJson.spaces4
 			myLog.info(s"Extracing first period block from forecast-json: ${jsonTxt}")
 		}
@@ -40,11 +40,14 @@ trait PeriodForecastExtractor {
 		// The first period in the array corresponds to the 'current' forecast, which may be for either day or night.
 		// Currently we assume that only this first period is interesting.
 		val pCurs0: ACursor = periodsArrayCursor.downN(0)
-		val p0JsonTXT: String = pCurs0.focus.map(_.spaces4).getOrElse({
+
+		def jsonPeriodDumper = pCurs0.focus.map(_.spaces4).getOrElse({
 			"No json found at period[0]"
 		})
 		myLog.info(s"period[0].history: ${pCurs0.history}")
-		myLog.info(s"period[0].json: ${p0JsonTXT}")
+		if (flg_dumpPeriodJson) {
+			myLog.info(s"period[0].json: ${jsonPeriodDumper}")
+		}
 		val p0Json: Option[Json] = pCurs0.focus
 
 		// Use our implicit periodForecastDecoder, defined above.
