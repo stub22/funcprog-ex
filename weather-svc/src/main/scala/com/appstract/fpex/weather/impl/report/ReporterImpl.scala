@@ -1,7 +1,9 @@
 package com.appstract.fpex.weather.impl.report
 
+import cats.data.EitherT
 import cats.effect.IO
 import com.appstract.fpex.weather.api._
+import com.appstract.fpex.weather.api.backend.BackendEffectTypes.BackendETIO
 import com.appstract.fpex.weather.api.backend.{BackendForecastProvider, Msg_BackendPeriodForecast, OurBackendError}
 import com.appstract.fpex.weather.api.report.{Msg_WeatherError, Msg_WeatherReport, TemperatureInterpreter, WeatherReportSupplier}
 import com.appstract.fpex.weather.impl.backend.BackendForecastProviderImpl
@@ -44,11 +46,24 @@ class WeatherReportSupplierImpl(dataSrcCli: => Client[IO]) extends WeatherReport
 
 	// latLonTxt is in the comma separated lat-long format used by the backend weather service, e.g. "39.7456,-97.0892"
 	override def fetchWeatherForLatLonPairTxt(latLonPairTxt : String) : IO[WReportOrErr] = {
-		val forecastInfoIO: IO[Msg_BackendPeriodForecast] = myBFP.oldeFetchForecastInfoForLatLonTxt(latLonPairTxt)
-		val reportIO: IO[Msg_WeatherReport] = forecastInfoIO.map(buildWeatherReport(latLonPairTxt, _))
-		// Translate any possible result from reportIO into a message (successful or error) we can output as JSON.
-		reportIO.redeem(err => Left(exceptToWeatherErr(latLonPairTxt, err)), Right(_))
-		// Equivalent:  reportIO.attempt.map(_.left.map(exceptToWeatherErr(latLonPairTxt, _)))
+		if (false) {
+			val forecastInfoIO: IO[Msg_BackendPeriodForecast] = myBFP.oldeFetchForecastInfoForLatLonTxt(latLonPairTxt)
+			val reportIO: IO[Msg_WeatherReport] = forecastInfoIO.map(buildWeatherReport(latLonPairTxt, _))
+			// Translate any possible result from reportIO into a message (successful or error) we can output as JSON.
+			reportIO.redeem(err => Left(exceptToWeatherErr(latLonPairTxt, err)), Right(_))
+			// Equivalent:  reportIO.attempt.map(_.left.map(exceptToWeatherErr(latLonPairTxt, _)))
+		}
+		else {
+			val x: BackendETIO[Msg_BackendPeriodForecast] = myBFP.fetchAndExtractPeriodForecast(latLonPairTxt)
+			// val r: EitherT[IO, OurBackendError, Msg_WeatherReport] = x.map(buildWeatherReport(latLonPairTxt, _))
+			// val re: IO[Either[OurBackendError, Msg_WeatherReport]] = r.value
+			val b = x.bimap(backendErrToWeatherErr(latLonPairTxt, _), buildWeatherReport(latLonPairTxt, _))
+			// val be: IO[Either[Msg_WeatherError, Msg_WeatherReport]] = b.value
+			val w : IO[WReportOrErr] = b.value
+			w
+		}
+
+
 	}
 
 	private def buildWeatherReport(latLonPairTxt : String, backendForecast : Msg_BackendPeriodForecast) : Msg_WeatherReport  = {
@@ -61,9 +76,12 @@ class WeatherReportSupplierImpl(dataSrcCli: => Client[IO]) extends WeatherReport
 
 	private def exceptToWeatherErr(latLonTxt : String, t : Throwable): Msg_WeatherError = {
 		t match {
-			case backendErr : OurBackendError => Msg_WeatherError(MTYPE_ERROR, latLonTxt, "BACKEND_ERR", backendErr.asText)
+			case backendErr : OurBackendError => backendErrToWeatherErr(latLonTxt, backendErr)
 			case other => Msg_WeatherError(MTYPE_ERROR, latLonTxt, "OTHER_ERR", other.toString)
 		}
+	}
+	private def backendErrToWeatherErr(latLonTxt : String, backendErr : OurBackendError) : Msg_WeatherError = {
+		Msg_WeatherError(MTYPE_ERROR, latLonTxt, "BACKEND_ERR", backendErr.asText)
 	}
 
 }

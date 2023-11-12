@@ -20,11 +20,11 @@ trait AppServerBuilder {
 	private val myLog: log4s.Logger = log4s.getLogger
 
 	def makeAppServerIO: IO[Nothing] = {
-		myLog.info(s"AppServer.makeAppServerIO BEGIN")
+		myLog.debug(s"AppServer.makeAppServerIO BEGIN")
 		val srvrRsrc: Resource[IO, Server] = makeServerResource()
 		myLog.debug(s"AppServer.makeAppServerIO built server resource: ${srvrRsrc}")
 		val srvrIO: IO[Nothing] = srvrRsrc.useForever
-		myLog.info(s"AppServer.makeAppServerIO returning srvrIO that is intended to run 'forever'")
+		myLog.debug(s"AppServer.makeAppServerIO returning srvrIO that is intended to run 'forever'")
 		srvrIO
 	}
 

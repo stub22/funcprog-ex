@@ -22,19 +22,22 @@ case class Msg_BackendAreaInfo(properties: Msg_BackendAreaProps)
 case class Msg_BackendAreaProps(forecast: String) // forecast is a URL for backend "gridpoints" service.
 
 // ForecastInfo types from backend weather service https://api.weather.gov/gridpoints/TOP/
-// These field names match the json-field-names in one "period" block in the backend json response.
+// These field names match the json-field-names in one "period" block we expect to find in the backend json response.
 case class Msg_BackendPeriodForecast(isDaytime: Boolean,
 									temperature: Int, temperatureUnit: Char,
 									shortForecast: String, detailedForecast: String)
-
 
 trait OurBackendError {
 	def asText : String = toString
 }
 
+// Any error/failure we encounter attempting to interact with backend HTTP services
 case class DataFetchError(opName: String, opArgs: String, exc: Throwable) extends OurBackendError
 
-case class DataDecodeError(opName: String, opArgs: String, exc: Throwable) extends OurBackendError
+// Failures that occur during decoding+interpretation of backend data received.
+// That data may be passed in the opArgs String (possibly truncated).
+// TODO: Define a snazzy way to summarize the input data that we failed on.
+case class DataDecodeFailure(opName: String, opArgs: String, exc: Throwable) extends OurBackendError
 
 // Because this error type extends Throwable, we are able to capture and map it using the implied error pathway of
 // the cats-effect IO.

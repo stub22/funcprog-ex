@@ -8,7 +8,7 @@ object AppMain extends IOApp.Simple {
 	// Entry point for our http4s + cats-effect application:
 	def run:IO[Unit] = {
 		val log: Logger = log4s.getLogger
-		log.info("AppMain.run BEGIN: Making AppServerBuilder")
+		log.info("AppMain.run BEGIN")
 		val appServerBuilder = new AppServerBuilder{}
 		log.debug("AppMain.run: Invoking .makeAppServerIO to build our runnable server effect")
 		val appServerIO: IO[Nothing] = appServerBuilder.makeAppServerIO
