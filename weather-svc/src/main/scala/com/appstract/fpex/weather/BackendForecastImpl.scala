@@ -26,27 +26,25 @@ class BackendForecastProviderImpl(dataSrcCli: => Client[IO]) extends BackendFore
 	private val myRequestBuilder = new BackendRequestBuilder {}
 	private val myForecastExtractor = new PeriodForecastExtractor {}
 
-	// Main public method for accessing our backend functionality.
-	// When successful it will call BOTH backend services.
+	// Main public method to build an effect that accesses our backend functionality, for a given input location.
+	// When successful the effect will access *both* backend HTTP services.
 	override def fetchForecastInfoForLatLonTxt (latLonPairTxt : String) : IO[Msg_BackendPeriodForecast] = {
 		val areaRqIO: IO[Request[IO]] = myRequestBuilder.buildAreaInfoGetRqIO(latLonPairTxt)
-		val forecastInfoIO: IO[Msg_BackendPeriodForecast] = chainToAreaInfoThenForecastInfo(areaRqIO)
+		val forecastInfoIO: IO[Msg_BackendPeriodForecast] = fetchAreaInfoThenForecastInfo(areaRqIO)
 		forecastInfoIO
 	}
 
-	// Here we start from a WRAPPED request (i.e. an IO which can produce a request).
-	private def chainToAreaInfoThenForecastInfo (areaRqIO: IO[Request[IO]]) : IO[Msg_BackendPeriodForecast] = {
-		// Note that each stage is wrapped in IO.  When each of these effects is run, it may encounter errors.
-		// We could instead use a sugary for-comprehension here.
-		// But we prefer to make the types fully explicit for each step, as long as our code is not TOO verbose.
-		val areaInfoIO: IO[Msg_BackendAreaInfo] = areaRqIO.flatMap(fetchAreaInfoOrError(_))
-		val forecastRqIO: IO[Request[IO]] = areaInfoIO.flatMap(myRequestBuilder.buildForecastRqIoFromAreaInfo(_))
-		val forecastInfoIO: IO[Msg_BackendPeriodForecast] = forecastRqIO.flatMap(fetchCurrentForecastPeriodOrError(_))
-		forecastInfoIO
+	// Send the given area-info request, and use the area-info response to build a followup forecast-info request.
+	private def fetchAreaInfoThenForecastInfo (areaRqIO: IO[Request[IO]]) : IO[Msg_BackendPeriodForecast] = {
+		// When each of these effect stages is run, it may encounter errors.
+		for {
+			areaInfoRq <- areaRqIO
+			areaInfoMsg <- fetchAreaInfoOrError(areaInfoRq)
+			forecastRq <- myRequestBuilder.buildForecastRqIoFromAreaInfo(areaInfoMsg)
+			forecastMsg <- fetchCurrentForecastPeriodOrError(forecastRq)
+		} yield (forecastMsg)
 	}
 
-	// Note that here the input is an UNWRAPPED request.
-	// Also note this is a public method (defined in our API trait).
 	override def fetchAreaInfoOrError(areaRq : Request[IO]) : IO[Msg_BackendAreaInfo] = {
 		import cats.implicits._
 		import JsonDecoders_BackendAreaInfo._
@@ -65,7 +63,7 @@ class BackendForecastProviderImpl(dataSrcCli: => Client[IO]) extends BackendFore
 		robustAreaIO
 	}
 
-	// Again here the input is an UNWRAPPED request.
+	// Again here the input is an bare request.
 	private def fetchCurrentForecastPeriodOrError(forecastRq : Request[IO]) : IO[Msg_BackendPeriodForecast] = {
 		import cats.implicits._
 		// Bring generic EntityDecoder[Json] implicits into scope

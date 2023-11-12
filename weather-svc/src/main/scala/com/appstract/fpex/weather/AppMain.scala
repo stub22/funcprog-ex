@@ -8,11 +8,19 @@ object AppMain extends IOApp.Simple {
 	// Entry point for our http4s + cats-effect application:
 	def run:IO[Unit] = {
 		val log: Logger = log4s.getLogger
-		log.info("AppMain.run BEGIN: making AppServerBuilder")
+		log.info("AppMain.run BEGIN: Making AppServerBuilder")
 		val appServerBuilder = new AppServerBuilder{}
-		log.info("AppMain.run: invoking .makeAppServerIO to build a runnable server effect")
+		log.debug("AppMain.run: Invoking .makeAppServerIO to build our runnable server effect")
 		val appServerIO: IO[Nothing] = appServerBuilder.makeAppServerIO
-		log.info("AppMain.run built our server IO effect. Now returning it to IoApp to be executed: " + appServerIO)
+		log.info("AppMain.run built our server IO effect. Now returning it to IOApp to be executed and RUN FOREVER")
+		log.info(
+			"""Within a few seconds you should be able to access Weather data from a web browser, using URLS like:
+			| Path argument example
+			|http://localhost:8080/check-weather-wpath/40.2222,-97.0997
+			|
+			|Query param arguments example
+			|http://localhost:8080/check-weather-wquery?lat=40.2222&lon=-97.0997
+			""".stripMargin)
 		appServerIO
 	}
 }
@@ -21,30 +29,31 @@ object AppMain extends IOApp.Simple {
  * This code started from a skeleton project provided by this giter8 template:
  * https://github.com/http4s/http4s-io.g8
  *
- * Platform compatibility:  So far Stu has tested only on MS Windows 10, in the following configurations:
- *   1) sbt 1.7.3 and Oracle JDK 8
- *   We can build and launch the app with this combo, but it fails during startup with
- *   java.lang.UnsupportedClassVersionError: ch/qos/logback/classic/spi/LogbackServiceProvider
- *   indicating that our Logback 1.4.1 dependency requires at least JDK 11.
+ * Platform compatibility:  So far Stu has tested only on MS Windows 10, in the following launch configurations:
  *
- *   2) sbt 1.7.3 with GraalVM JDK 11 (Version 22.3.0)
- *   A) Builds and runs with same AnsiConsole issue as the IntelliJ setup #3 below.
- *   Setting withJansi to false clears this issue.
+ *   1) sbt 1.7.3 with GraalVM JDK 11 (Version 22.3.0)
  *
- *   B) Note that SBT does not fork by default, so by default will run our code INSIDE the SBT process.
- *   If we use SBT as an interactive shell, then we will have trouble using our ".run" more
- *   than once in the same session, because our network port 8080 remains bound when the
- *   run is cancelled with Ctrl-C.  This issue can be addressed by running in one of these other ways:
- *   a) Invoking SBT in batch mode, e.g. "sbt run" from BASH command line.
- *   b) Using "bgRun" command from SBT shell.
- *   c) Using "fork" instruction in our build.sbt.
- *   https://www.scala-sbt.org/1.x/docs/Forking.html
+ *	Launching our server from sbt works with the following noted platform issues:
+	 *   A) JDK 11 is required by Logback 1.4.1.
+	 *
+	 *   B) We must set withJansi to false in the logback appender config when running on Windows.
+	 *   Otherwise we see errors at startup, described below.
+	 *   (YMMV with other platforms).
+	 *
+	 *   C) SBT does not fork by default, so by default will run our code INSIDE the SBT process.
+	 *   If we use SBT as an interactive shell, then we will have trouble using our ".run" more
+	 *   than once in the same session, because our network port 8080 remains bound when the
+	 *   run is cancelled with Ctrl-C.  This issue can be addressed by running in one of these other ways:
+	 *   a) Invoking SBT in batch mode, e.g. "sbt run" from bash command line.
+	 *   b) Using "bgRun" command from SBT shell.
+	 *   c) Using "fork" instruction in our build.sbt.
+	 *   https://www.scala-sbt.org/1.x/docs/Forking.html
  *
- *   3) IntelliJ JetBrains IDE with GraalVM JDK 11, as well as Scala and SBT plugins.
+ *   2) IntelliJ JetBrains IDE with GraalVM JDK 11, as well as Scala and SBT plugins.
  *   Project imports OK from the build.sbt file, and builds in the .idea format.
  *   Can launch "AppMain" and "WeatherRouteSpec" using "Run" context menu.
 
-Note that our logback.xml from the template initially contained this setting:
+Note that our logback.xml from the giter8 template initially contained this setting:
 <withJansi>true</withJansi>
 
 22:21:28,907 |-INFO in ch.qos.logback.classic.LoggerContext[default] - This is logback-classic version 1.4.1

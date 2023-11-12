@@ -26,37 +26,45 @@ private case class TempRange(name : String, scale : TempScale, minTemp_opt : Opt
 		minTemp_opt.fold(true)(temp >= _) && maxTemp_opt.fold(true)(temp < _)
 	}
 }
+object TempRangeNames {
+	val COLD = "cold"
+	val MODERATE = "moderate"
+	val HOT = "hot"
+}
 
 class TempInterpImpl extends TemperatureInterpreter {
+	import TempRangeNames._
 
-	// Explicitly defined constant values which are used multiple times in describing temperature ranges for day and night.
+	// These constant values which are used multiple times in describing temperature ranges for day and night.
 	// Here "MAX_F" means max degrees Fahrenheit.
-	private val TEMP_RANGE_NAME_COLD = "cold"
-	private val BOUND_DAY_COLD_MAX_F = 54.5f	// Daytime temps lower than this are "cold"
-	private val BOUND_NIGHT_COLD_MAX_F = 39.9f	// Nighttime temps lower than this are "cold"
+	//private val TEMP_RANGE_NAME_COLD = "cold"
+	private val DAY_COLD_MAX_F = 54.5f	// Daytime temps lower than this are "cold"
+	private val DAY_MODERATE_MAX_F = 84.7f	// Daytime temps below this (but above DAY_COLD_MAX_F) are "moderate"
 
-	private val TEMP_RANGE_NAME_MODERATE = "moderate"
-	private val BOUND_DAY_MODERATE_MAX_F = 84.7f	// Daytime temps below this (but above BOUND_DAY_COLD_MAX_F) are "moderate"
-	private val BOUND_NIGHT_MODERATE_MAX_F = 73.1f	// Nighttime temps below this (but above BOUND_NIGHT_COLD_MAX_F) are "moderate"
+	private val NIGHT_COLD_MAX_F = 39.9f	// Nighttime temps lower than this are "cold"
+	//private val TEMP_RANGE_NAME_MODERATE = "moderate"
+
+	private val NIGHT_MODERATE_MAX_F = 73.1f	// Nighttime temps below this (but above BOUND_NIGHT_COLD_MAX_F) are "moderate"
 
 	// Any temperature hotter than the MODERATE_MAX must be a HOT temp.
-	private val TEMP_RANGE_NAME_HOT = "hot"
+
+	//private val TEMP_RANGE_NAME_HOT = "hot"
 
 	private val TEMP_RANGE_NAME_ERR = "RANGE-ERROR"
 
 	// We define a list of ranges that we can match an incoming temperature value against.
 	// Each range should have a maxTemp equal to the minTemp of the following range.
-
+	//
 	// We have only defined ranges for Fahrenheit.
 	private val rangesDayF: List[TempRange] = List(
-		TempRange(TEMP_RANGE_NAME_COLD, Fahrenheit, None, Some(BOUND_DAY_COLD_MAX_F)),
-		TempRange(TEMP_RANGE_NAME_MODERATE, Fahrenheit, Some(BOUND_DAY_COLD_MAX_F), Some(BOUND_DAY_MODERATE_MAX_F)),
-		TempRange(TEMP_RANGE_NAME_HOT, Fahrenheit, Some(BOUND_DAY_MODERATE_MAX_F), None)
+		TempRange(COLD, Fahrenheit, None, Some(DAY_COLD_MAX_F)),
+		TempRange(MODERATE, Fahrenheit, Some(DAY_COLD_MAX_F), Some(DAY_MODERATE_MAX_F)),
+		TempRange(HOT, Fahrenheit, Some(DAY_MODERATE_MAX_F), None)
 	)
 	private val rangesNightF: List[TempRange] = List(
-		TempRange(TEMP_RANGE_NAME_COLD, Fahrenheit, None, Some(BOUND_NIGHT_COLD_MAX_F)),
-		TempRange(TEMP_RANGE_NAME_MODERATE, Fahrenheit, Some(BOUND_NIGHT_COLD_MAX_F), Some(BOUND_NIGHT_MODERATE_MAX_F)),
-		TempRange(TEMP_RANGE_NAME_HOT, Fahrenheit, Some(BOUND_NIGHT_MODERATE_MAX_F), None)
+		TempRange(COLD, Fahrenheit, None, Some(NIGHT_COLD_MAX_F)),
+		TempRange(MODERATE, Fahrenheit, Some(NIGHT_COLD_MAX_F), Some(NIGHT_MODERATE_MAX_F)),
+		TempRange(HOT, Fahrenheit, Some(NIGHT_MODERATE_MAX_F), None)
 	)
 
 	// Implements our requirement to describe a temperature with a single word.

@@ -45,6 +45,7 @@ case class Msg_BackendPeriodForecast(
 		temperature : Int, temperatureUnit : Char,
 		shortForecast : String, detailedForecast : String)
 
+// We post a backend error
 // Because this error type extends Throwable, we are able to capture and map it easily with cats-effect IO.
 // Note that this type does NOT need to be serialized to/from JSON.
 case class BackendError(opName: String, opArgs: String, exc: Throwable) extends RuntimeException {

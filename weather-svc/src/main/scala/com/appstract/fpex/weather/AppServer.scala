@@ -11,6 +11,8 @@ import org.http4s.ember.server.EmberServerBuilder
 import org.log4s
 import org.http4s.server.middleware.Logger
 
+// The heart of our application is setup in .makeAppRoutesKleisli.
+// The rest of this code sets up the wiring of our HTTP service.
 trait AppServerBuilder {
 
 	private val myLog: log4s.Logger = log4s.getLogger
@@ -18,13 +20,14 @@ trait AppServerBuilder {
 	def makeAppServerIO: IO[Nothing] = {
 		myLog.info(s"AppServer.makeAppServerIO BEGIN")
 		val srvrRsrc: Resource[IO, Server] = makeServerResource()
-		myLog.info(s"AppServer.makeAppServerIO built server resource: ${srvrRsrc}")
+		myLog.debug(s"AppServer.makeAppServerIO built server resource: ${srvrRsrc}")
 		val srvrIO: IO[Nothing] = srvrRsrc.useForever
-		myLog.info(s"AppServer.makeAppServerIO returning srvrIO=${srvrIO}")
+		myLog.info(s"AppServer.makeAppServerIO returning srvrIO that is intended to run 'forever'")
 		srvrIO
 	}
 
 	private def makeServerResource(): Resource[IO, Server] = {
+		// It's important for the reader to recognize these stages of the server launch.
 		// First we need an HTTP client resource to access backend HTTP services.
 		val clientRsrc: Resource[IO, Client[IO]] = EmberClientBuilder.default[IO].build
 		// Next we make an HttpApp resource, which uses the client.
@@ -34,6 +37,10 @@ trait AppServerBuilder {
 		srvrRsrc
 	}
 
+
+	// We pass dataSrcCli client as a BY-NAME parameter to each application component that needs it,
+	// thus essentially providing a
+	// This is perhaps a bit smellycouldataSrcCli: => Client[IO]
 	private def makeHttpAppWithLogging(dataSrcCli: => Client[IO]) : HttpApp[IO] = {
 		val routesKleisli = makeAppRoutesKleisli(dataSrcCli)
 		val (flag_logHeaders, flag_logBody) = (true, true)
@@ -41,11 +48,12 @@ trait AppServerBuilder {
 	}
 
 	private def makeAppRoutesKleisli(dataSrcCli: => Client[IO]) : Kleisli[IO, Request[IO], Response[IO]] = {
+		// Heart of our application is defined by the routes we can respond to.
 		val weatherRoutes = new AppWebRoutes{}
 		val forecastSupp : WeatherReportSupplier = new WeatherReportSupplierImpl(dataSrcCli)
 		// These HttpRoutes kleislis may be composed together.
 		val weatherRoutesK: HttpRoutes[IO] = weatherRoutes.weatherReportRoutes(forecastSupp)
-		// .orNotFound completes our route setup with an error handler to generate responses for the "not found" case.
+		// .orNotFound completes our route setup with an error handler to generate responses for a bad URL "not found" case.
 		val httpRoutesKleisli: Kleisli[IO, Request[IO], Response[IO]] = weatherRoutesK.orNotFound
 		httpRoutesKleisli
 	}
