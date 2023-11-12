@@ -21,7 +21,7 @@ private object JsonDecoders_BackendAreaInfo {
 
 
 trait PeriodForecastExtractor {
-	/** *
+	/***
 	 * Empirically, we observed that the backend provides a time-ordered sequence of forecast `periods`, alternating
 	 * between "daytime" and "nightime" (indicated by the 'isDaytime' flag in each `period` record).
 	 *
@@ -29,7 +29,7 @@ trait PeriodForecastExtractor {
 	 * To simplify our coding task, we have chosen to use only the most current forecast period, regardless of day/night.
 	 * However we do capture the isDaytime flag, so that client code may interpret the weather accordingly.
 	 * If needed, we could build a larger data structure to capture multiple periods.
-	 * But in this toy, we assume that returning a single period forecast is sufficient.
+	 * But here in this toy, we assume that returning a single period forecast is sufficient.
 	 */
 
 	private val myLog: Logger = log4s.getLogger
@@ -40,7 +40,7 @@ trait PeriodForecastExtractor {
 	private implicit val periodForecastDecoder: Decoder[Msg_BackendPeriodForecast] = deriveDecoder[Msg_BackendPeriodForecast]
 	// To find that leaf record we use explicit Circe cursor navigation.
 
-	def extractFirstPeriodForecast(forecastJson: Json): Either[DecodingFailure, Msg_BackendPeriodForecast] = { // IO[Msg_BackendPeriodForecast]  = {
+	def extractFirstPeriodForecast(forecastJson: Json): Either[DecodingFailure, Msg_BackendPeriodForecast] = {
 		val (flg_dumpFullJson, flg_dumpPeriodJson) = (false, false)
 		if (flg_dumpFullJson) {
 			val jsonTxt = forecastJson.spaces4
@@ -59,7 +59,7 @@ trait PeriodForecastExtractor {
 			"No json found at period[0]"
 		})
 
-		myLog.info(s"period[0].history: ${pCurs0.history}")
+		myLog.debug(s"period[0].history: ${pCurs0.history}")
 		if (flg_dumpPeriodJson) {
 			myLog.info(s"period[0].json: ${jsonPeriodDumper}")
 		}

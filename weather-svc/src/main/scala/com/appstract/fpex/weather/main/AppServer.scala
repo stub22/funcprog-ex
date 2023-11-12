@@ -40,9 +40,7 @@ trait AppServerBuilder {
 	}
 
 
-	// We pass dataSrcCli client as a BY-NAME parameter to each application component that needs it,
-	// thus essentially providing a
-	// This is perhaps a bit smellycouldataSrcCli: => Client[IO]
+	// We pass dataSrcCli client as a lazy BY-NAME parameter to each application component that needs it.
 	private def makeHttpAppWithLogging(dataSrcCli: => Client[IO]) : HttpApp[IO] = {
 		val routesKleisli = makeAppRoutesKleisli(dataSrcCli)
 		val (flag_logHeaders, flag_logBody) = (true, true)
@@ -56,13 +54,12 @@ trait AppServerBuilder {
 		// These HttpRoutes kleislis may be composed together.
 		val weatherRoutesK: HttpRoutes[IO] = weatherRoutes.weatherReportRoutes(forecastSupp)
 		// .orNotFound completes our route setup with an error handler to generate responses for a bad URL "not found" case.
-		val httpRoutesKleisli: Kleisli[IO, Request[IO], Response[IO]] = weatherRoutesK.orNotFound
-		httpRoutesKleisli
+		val httpRoutesK: Kleisli[IO, Request[IO], Response[IO]] = weatherRoutesK.orNotFound
+		httpRoutesK
 	}
 
 	private def makeServerResourceForHttpApp(httpApp: HttpApp[IO]):  Resource[IO, Server] = {
 		// TODO:  In a real app the host and port would come from some appropriate configuration setup.
-		// These macros are used in the http4s-io template.
 		import com.comcast.ip4s._	// Brings ipv4 and port macros into scope
 		val host: Ipv4Address = ipv4"0.0.0.0"
 		val portNum: Port = port"8080"

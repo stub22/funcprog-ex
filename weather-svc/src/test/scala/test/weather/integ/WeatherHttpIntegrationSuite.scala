@@ -13,7 +13,6 @@ import org.log4s.Logger
 
 // These are NOT 'unit' tests.
 // These tests attempt to access live http servers.
-
 class WeatherHttpIntegrationSuite extends CatsEffectSuite {
 
 	// Marking tests with this tag prevents them from being executed during 'sbt test', as configured in build.sbt.
@@ -29,7 +28,7 @@ class WeatherHttpIntegrationSuite extends CatsEffectSuite {
 	// These tests assume the backend at api.weather.gov is available, so they are testing more than just our software.
 
 	// Note that even when backend fails we create a successful frontend HTTP Response, so these tests usually
-	// don't "fail" (as far as the test runner knows).  However we may see ERROR messages in the output log.
+	// don't "fail" (as far as the test runner knows).  However we may see ERROR / WARN messages in the output log.
 
 	// TODO:  Consider treating weather-service failures as test failures.
 	// TODO:  Check the contents of the HTTP response body-stream.
@@ -41,21 +40,21 @@ class WeatherHttpIntegrationSuite extends CatsEffectSuite {
 
 	test("check-weather-wquery (for hardcoded latTxt and lonTxt) returns status code 200".tag(tagInteg)) {
 		val weatherUrlPath = mkWqryUrlForLatLong("39.7456", "-97.0892")
-		applyWeatherRouteAndAssertStatusOK(weatherUrlPath)
+		applyWeatherRouteAndAssertResponseStatusOK(weatherUrlPath)
 	}
 	test("check-weather-wpath (for a sequence hardcoded lat,long pairs) returns status code 200".tag(tagInteg)) {
 		// Here we sequence several simulated web requests into a single test-case.
 		val latLonTxt_01 = "39.7456,-97.0892"	// Point in Kansas, USA used as an example in api.weather.gov docs.
 		val latLonTxt_02 = "39.7255,-97.4923"	// Random spot sorta close by (also in Kansas).
 		val latLonTxt_03 = "33.2214,-88.0055"	// Random spot in Alabama, USA
-		// Hmm, did we see a point in Panama work one time?
-		val latLonTxt_04 = "8.995929,-79.5733"	// Point near Panama City, Panama.   Backend (always?) returns 301 Moved Permanently
+		val latLonTxt_04 = "8.995929,-79.5733"	// Point near Panama City, Panama.  Backend (always?) returns 301 Moved Permanently
 		// TODO:  Try out more spots on the globe.
 
 		val points = List[String](latLonTxt_01, latLonTxt_02, latLonTxt_03, latLonTxt_04)
 		val urls: List[String] = points.map(mkWpathUrlForLatLong(_))
-		val checkers: List[IO[Unit]] = urls.map(applyWeatherRouteAndAssertStatusOK(_))
+		val checkers: List[IO[Unit]] = urls.map(applyWeatherRouteAndAssertResponseStatusOK(_))
 
+		// Combine our separate testing effects
 		import cats.implicits._
 		val seqChecker : IO[List[Unit]] = checkers.sequence
 		seqChecker
@@ -69,14 +68,16 @@ class WeatherHttpIntegrationSuite extends CatsEffectSuite {
 		s"/${myRoutes.OP_NAME_WEATHER_WQUERY}?lat=${latTxt}&lon=${lonTxt}"
 	}
 
-	private def applyWeatherRouteAndAssertStatusOK(weatherUrlPath : String) : IO[Unit] = {
+	private def applyWeatherRouteAndAssertResponseStatusOK(weatherUrlPath : String) : IO[Unit] = {
 		val weatherRespIO: IO[Response[IO]] = applyWeatherRoute(weatherUrlPath)
+		val loggedWeathRespIO = weatherRespIO.flatTap(resp => IO.blocking{
+			myLog.info(s"applyWeatherRouteAndAssertResponseStatusOK(${weatherUrlPath}) got Response=${resp}, Response.Body=${resp.body}")
+		})
 		// When run, asserts that the response-effect (upon being run) produces HTTP Status OK (200).
-		val assertionEffect: IO[Unit] = assertIO(weatherRespIO.map(resp => {
-			myLog.info(s"XXXXXXXXXXXXXXXX  Route for ${weatherUrlPath} Got Response=${resp}, Response.Body=${resp.body}")
+		val assertEffect: IO[Unit] = assertIO(loggedWeathRespIO.map(resp => {
 			resp.status
 		}), Status.Ok)
-		assertionEffect
+		assertEffect
 	}
 
 	private def applyWeatherRoute(weatherUrlPath : String) : IO[Response[IO]] = {
@@ -85,10 +86,12 @@ class WeatherHttpIntegrationSuite extends CatsEffectSuite {
 
 		// Eagerly construct Uri.  May throw a ParseFailure.
 		val weatherUri: Uri = Uri.unsafeFromString(weatherUrlPath)
-		myLog.info(s"WeatherRouteSpec.invokeForecastRoute made test-weather-uri: ${weatherUri}")
 		val requestIO: Request[IO] = Request[IO](Method.GET, weatherUri)
 
-		// Setup a real web client.  Remember we are NOT doing 'unit' testing here!
+		// When debugging, we immediately log the simulated request, which helps to illustrate our control flow.
+		myLog.debug(s"IMMEDIATE TEST LOGGING: .applyWeatherRoute parsed test weather-uri: ${weatherUri} and created simulated request: ${requestIO}")
+
+		// Setup a real web client to use for backend fetches.  Remember we are NOT doing 'unit' testing here!
 		val embCliRsrc: Resource[IO, Client[IO]] = EmberClientBuilder.default[IO].build
 
 		// Prepare to build our own web route to execute.
@@ -100,7 +103,9 @@ class WeatherHttpIntegrationSuite extends CatsEffectSuite {
 
 		// When responseIO is eventually run, it will build and use the route just one time, and then release it.
 		val responseIO = routeResource.use(hr => {
-			hr.orNotFound(requestIO)
+			val logEff = IO.blocking{ myLog.info(s".applyWeatherRoute(${weatherUri}) is testing simulated request: ${requestIO}")}
+			val routeExecEff: IO[Response[IO]] = hr.orNotFound(requestIO)
+			logEff *> routeExecEff
 		})
 		responseIO
 	}

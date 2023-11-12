@@ -2,7 +2,6 @@ package com.appstract.fpex.weather.impl.report
 
 import cats.data.EitherT
 import cats.effect.IO
-import com.appstract.fpex.weather.api._
 import com.appstract.fpex.weather.api.backend.BackendEffectTypes.BackendETIO
 import com.appstract.fpex.weather.api.backend.{BackendForecastProvider, Msg_BackendPeriodForecast, BackendError}
 import com.appstract.fpex.weather.api.report.{Msg_WeatherError, Msg_WeatherReport, TemperatureClassifier, WeatherReportSupplier}
@@ -29,36 +28,39 @@ object JsonEncoders_Report {
 }
 
 class WeatherReportSupplierImpl(dataSrcCli: => Client[IO]) extends WeatherReportSupplier {
-
-	private val myLog: Logger = log4s.getLogger
+	private def getLogger: Logger = log4s.getLogger
 
 	private val myBFP : BackendForecastProvider = new BackendForecastProviderImpl(dataSrcCli)
-
+	import myBFP.LatLonPairTxt
 	private val myInterp : TemperatureClassifier = new TemperClassifierImpl
 
 	override def fetchWeatherForLatLon(latTxt : String, lonTxt : String) : IO[WReportOrErr] = {
-		myLog.info(s"fetchWeatherForLatLon(lat=${latTxt}, lon=${lonTxt}")
+		val logEff = IO.blocking{ getLogger.info(s".fetchWeatherForLatLon(lat=${latTxt}, lon=${lonTxt})") }
 		// TODO:  Validate input values.  On failure, should produce a validation error and prevent any further work.
 		// Concatenate the lat,lon into the same format used by api.weather.gov backend.
-		val latLonPairTxt = s"${latTxt},${lonTxt}"
-		fetchWeatherForLatLonPairTxt(latLonPairTxt)
+		val latLonPairTxt : LatLonPairTxt= s"${latTxt},${lonTxt}"
+		logEff &> fetchWeatherForLatLonPairTxt(latLonPairTxt)
 	}
 
 	// latLonTxt is in the comma separated lat-long format used by the backend weather service, e.g. "39.7456,-97.0892"
-	override def fetchWeatherForLatLonPairTxt(latLonPairTxt : String) : IO[WReportOrErr] = {
+	override def fetchWeatherForLatLonPairTxt(latLonPairTxt : LatLonPairTxt) : IO[WReportOrErr] = {
 		val forecastETIO: BackendETIO[Msg_BackendPeriodForecast] = myBFP.fetchAndExtractPeriodForecast(latLonPairTxt)
-		val wreportETIO: EitherT[IO, Msg_WeatherError, Msg_WeatherReport] = forecastETIO.bimap(
+		val loggedForecastETIO = forecastETIO.semiflatTap(forecastMsg => IO.blocking {
+			getLogger.info(s".fetchWeatherForLatLonPairTxt(${latLonPairTxt}) got backendForecast : ${forecastMsg}")
+		})
+		val wreportETIO: EitherT[IO, Msg_WeatherError, Msg_WeatherReport] = loggedForecastETIO.bimap(
 				backendErrToWeatherErr(latLonPairTxt, _), 	// Mapping the Left-Error case
 				buildWeatherReport(latLonPairTxt, _))		// Mapping the Right-Success case
 		val wreportIO : IO[WReportOrErr] = wreportETIO.value
+		val loggedReportIO = wreportIO.flatTap(reportOrErr => IO.blocking {
+			getLogger.info(s".fetchWeatherForLatLonPairTxt made report-or-error : ${reportOrErr}")
+		})
 		wreportIO
 	}
 
 	private def buildWeatherReport(latLonPairTxt : String, backendForecast : Msg_BackendPeriodForecast) : Msg_WeatherReport  = {
-		myLog.info(s"buildWeatherReport using backendForecast : ${backendForecast}")
 		val tempDesc: String = myInterp.findFahrenheitTempRange(backendForecast.temperature.toFloat, backendForecast.isDaytime)
 		val report = Msg_WeatherReport(MTYPE_REPORT, latLonPairTxt, backendForecast.shortForecast, tempDesc)
-		myLog.info(s"buildWeatherReport made report: ${report}")
 		report
 	}
 

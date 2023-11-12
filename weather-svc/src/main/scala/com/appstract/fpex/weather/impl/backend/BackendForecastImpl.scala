@@ -17,10 +17,9 @@ class BackendForecastProviderImpl(dataSrcCli: => Client[IO]) extends BackendFore
 	private val myRequestBuilder = new BackendRequestBuilder {}
 	private val myForecastExtractor = new PeriodForecastExtractor {}
 
-
 	// Main public method to build an effect that accesses our backend functionality, for a given input location.
-	// When successful the effect will access *both* backend HTTP services.
-	// Send the given area-info request, and use the area-info response to build a followup forecast-info request.
+	// When successful this effect will access *both* backend HTTP services.
+	// Sends the given area-info request, and use the area-info response to build a followup forecast-info request.
 	override def fetchAndExtractPeriodForecast(latLonPairTxt: String): BackendETIO[Msg_BackendPeriodForecast] = {
 		val areaRqIO: IO[Request[IO]] = myRequestBuilder.buildAreaInfoGetRqIO(latLonPairTxt)
 		val periodForeETIO = for {
@@ -41,12 +40,9 @@ class BackendForecastProviderImpl(dataSrcCli: => Client[IO]) extends BackendFore
 		val areaETIO: BackendETIO[Msg_BackendAreaInfo] = eithT.leftMap(origExc => {
 			BackendFetchError(opName, areaRq.toString, origExc)
 		})
-		// Design decision:  Make sure that any error gets logged now (as well as delivered as our result).
-		val loggedETIO = areaETIO.leftSemiflatTap((bckErr: BackendError) => {
-			IO.blocking {
-				// In general a logging call MIGHT be blocking.
-				getLogger.warn(s"${opName} for ${areaRq.toString} failed with error : ${bckErr.asText}")
-			}
+		// Design decision:  Make sure that any error gets logged from here (as well as delivered as our result).
+		val loggedETIO = areaETIO.leftSemiflatTap((bckErr: BackendError) => IO.blocking {
+			getLogger.warn(s"${opName} for ${areaRq.toString} failed with error : ${bckErr.asText}")
 		})
 		loggedETIO
 	}
@@ -59,7 +55,13 @@ class BackendForecastProviderImpl(dataSrcCli: => Client[IO]) extends BackendFore
 			val fetchJsonEff: IO[Json] = dataSrcCli.expect[Json](foreRq)
 			fetchJsonEff.attempt.map(_.left.map(BackendFetchError(opName, foreRq.toString, _)))
 		})
-		EitherT(fetchJsonOrErr)
+		val fetchETIO : BackendETIO[Json] = EitherT(fetchJsonOrErr)
+		// Design decision:  Make sure that any error gets logged from here (as well as delivered as our result).
+		val loggedETIO = fetchETIO.leftSemiflatTap((bckErr: BackendError) => IO.blocking {
+			getLogger.warn(s"${opName} failed with error : ${bckErr.asText}")
+		})
+		loggedETIO
+
 	}
 
 	private def extractForecastPeriod(forecastJson : Json) : BackendETIO[Msg_BackendPeriodForecast] = {
@@ -67,9 +69,8 @@ class BackendForecastProviderImpl(dataSrcCli: => Client[IO]) extends BackendFore
 		val prdForecastOrDecFail: Either[DecodingFailure, Msg_BackendPeriodForecast] =
 				myForecastExtractor.extractFirstPeriodForecast(forecastJson)
 		val prdForeOrDDF = prdForecastOrDecFail.left.map(decFail => {
-			// TODO: Supply a more useful+efficient summary of the Json in the DataDecodeFailure
+			// TODO: Supply a more useful+efficient summary of the Json in the BackendDecodeFailure
 			val jsonFullTxt = forecastJson.toString()
-			// val pre = jsonFullTxt.take(1000)
 			BackendDecodeFailure(opName, jsonFullTxt.take(1000), decFail)
 		})
 		EitherT.fromEither(prdForeOrDDF)

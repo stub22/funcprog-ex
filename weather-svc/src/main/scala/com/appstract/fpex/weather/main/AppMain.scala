@@ -34,7 +34,7 @@ object AppMain extends IOApp.Simple {
  *   1) sbt 1.7.3 with GraalVM JDK 11 (Version 22.3.0)
  *
  *	Launching our server from sbt works with the following noted platform issues:
-	 *   A) JDK 11 is required by Logback 1.4.1.
+	 *   A) JDK 11+ is required by Logback 1.4.1.
 	 *
 	 *   B) We must set withJansi to false in the logback appender config when running on Windows.
 	 *   Otherwise we see errors at startup, described below.
@@ -51,9 +51,11 @@ object AppMain extends IOApp.Simple {
  *
  *   2) IntelliJ JetBrains IDE with GraalVM JDK 11, as well as Scala and SBT plugins.
  *   Project imports OK from the build.sbt file, and builds in the .idea format.
- *   Can launch "AppMain" and "WeatherRouteSpec" using "Run" context menu.
+ *   Can launch "AppMain" using "Run" context menu.
 
-Note that our logback.xml from the giter8 template initially contained this setting:
+Note that our logback.xml from the giter8 template initially contained this setting,
+which we have changed to false, to prevent the issue generating warnings shown below.
+
 <withJansi>true</withJansi>
 
 22:21:28,907 |-INFO in ch.qos.logback.classic.LoggerContext[default] - This is logback-classic version 1.4.1

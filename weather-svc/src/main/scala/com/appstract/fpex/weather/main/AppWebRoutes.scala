@@ -8,7 +8,7 @@ import org.log4s
 import org.log4s.Logger
 
 trait AppWebRoutes {
-	private val myLog: Logger = log4s.getLogger
+	private def getLogger: Logger = log4s.getLogger
 
 	// Our frontend HTTP operation names:
 	val OP_NAME_WEATHER_WPATH = "check-weather-wpath"  	// WPATH means "with path argument"
@@ -46,14 +46,17 @@ trait AppWebRoutes {
 
 	def weatherOutputMsgToWebResponse(msg : Either[Msg_WeatherError, Msg_WeatherReport]) : IO[Response[IO]] = {
 		import com.appstract.fpex.weather.impl.report.JsonEncoders_Report._
-		myLog.info(s"weatherOutputMsgToWebResponse is mapping output message ${msg} to HTTP response")
-		msg match {
+		val outputLogEff = IO.blocking {
+			getLogger.info(s"weatherOutputMsgToWebResponse is mapping output message ${msg} to HTTP response")
+		}
+		val outputResponseEff = msg match {
 			// When we encounter backend errors, our frontend returns HTTP status=OK (200) with a body containing a
 			// JSON description of the error.  To return an HTTP error instead, change the "Left" mapping here.
 			// Note that bad frontend HTTP input, such as a malformed input URL, is not handled here.
 			case Left(err) => Ok(err)
 			case Right(report) => Ok(report)
 		}
+		outputLogEff &> outputResponseEff
 	}
 
 }

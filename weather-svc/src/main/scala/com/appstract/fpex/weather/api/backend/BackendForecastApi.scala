@@ -33,14 +33,13 @@ trait BackendForecastProvider {
 
 	import BackendEffectTypes._
 
+	type LatLonPairTxt = String
+
 	// This "fetchAndExtractPeriodForecast" method is our primary method for accessing the backend.
 	// SHORTCUT:  latLonTxt is in the comma separated lat-long format used by the backend weather service,
 	// e.g. "39.7456,-97.0892".
-	// The resulting effect will attempt to access BOTH of the backend services (in sequence) to produce a useful
-	// forecast-period result.  This sequencing demonstrates functional composition of effects!
-	// The returned IO may fail when it is run, in which case it should produce a BackendError.
-
-	def fetchAndExtractPeriodForecast(latLonPairTxt : String) : BackendETIO[Msg_BackendPeriodForecast]
+	// Using this idiosyncratic String format
+	def fetchAndExtractPeriodForecast(latLonPairTxt : LatLonPairTxt) : BackendETIO[Msg_BackendPeriodForecast]
 
 	// Expose ability to fetch just the AreaInfo, which is the results from the first stage '/points' service.
 	// Useful for testing, and for other features we might reasonably add.
