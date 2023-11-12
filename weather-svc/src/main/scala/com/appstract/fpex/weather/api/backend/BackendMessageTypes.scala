@@ -19,7 +19,7 @@ package com.appstract.fpex.weather.api.backend
 case class Msg_BackendAreaInfo(properties: Msg_BackendAreaProps)
 
 // Props occurs nested inside the AreaInfo record, in JSON and here in Scala.
-case class Msg_BackendAreaProps(forecast: String) // forecast is a URL for backend "gridpoints" service.
+case class Msg_BackendAreaProps(forecast: String) // forecast contains a URL for backend "gridpoints" service.
 
 // ForecastInfo types from backend weather service https://api.weather.gov/gridpoints/TOP/
 // These field names match the json-field-names in one "period" block we expect to find in the backend json response.
@@ -27,27 +27,17 @@ case class Msg_BackendPeriodForecast(isDaytime: Boolean,
 									temperature: Int, temperatureUnit: Char,
 									shortForecast: String, detailedForecast: String)
 
-trait OurBackendError {
+trait BackendError {
 	def asText : String = toString
 }
 
-// Any error/failure we encounter attempting to interact with backend HTTP services
-case class DataFetchError(opName: String, opArgs: String, exc: Throwable) extends OurBackendError
+// DataFetchError = Any error/failure we encounter attempting to interact with backend HTTP services
+// (but excluding failures in interpreting backend responses - those fall under DataDecodeFailure below ).
+case class BackendFetchError(opName: String, opArgs: String, exc: Throwable) extends BackendError
 
-// Failures that occur during decoding+interpretation of backend data received.
+// DataDecodeFailure = Failures that occur during decoding+interpretation of backend data received.
 // That data may be passed in the opArgs String (possibly truncated).
-// TODO: Define a snazzy way to summarize the input data that we failed on.
-case class DataDecodeFailure(opName: String, opArgs: String, exc: Throwable) extends OurBackendError
+// TODO: Define a snazzy way to summarize the input data (Json) that we failed on.
+case class BackendDecodeFailure(opName: String, opArgs: String, exc: Throwable) extends BackendError
 
 
-/*
-// Because this error type extends Throwable, we are able to capture and map it using the implied error pathway of
-// the cats-effect IO.
-// Note that this type does NOT need to be serialized to/from JSON.
-case class OldeBackendError(opName: String, opArgs: String, exc: Throwable) extends RuntimeException with OurBackendError {
-	// Because we extend RuntimeException, .toString does not have the usual Scala case class behavior.
-	// So we define our own asText method to provide a useful String dump.
-	override def asText : String = s"BackendError(opName=${opName}, opArgs=${opArgs}, exc=${exc})"
-}
-
-*/

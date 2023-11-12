@@ -3,7 +3,7 @@ package com.appstract.fpex.weather.impl.backend
 import cats.data.EitherT
 import cats.effect.IO
 import com.appstract.fpex.weather.api.backend.BackendEffectTypes.BackendETIO
-import com.appstract.fpex.weather.api.backend.{BackendForecastProvider, DataFetchError, DataDecodeFailure, Msg_BackendAreaInfo, Msg_BackendPeriodForecast, OurBackendError}
+import com.appstract.fpex.weather.api.backend.{BackendForecastProvider, BackendFetchError, BackendDecodeFailure, Msg_BackendAreaInfo, Msg_BackendPeriodForecast, BackendError}
 import io.circe.{DecodingFailure, Json}
 import org.http4s.Request
 import org.http4s.client.Client
@@ -34,15 +34,15 @@ class BackendForecastProviderImpl(dataSrcCli: => Client[IO]) extends BackendFore
 
 	override def fetchAreaInfo(areaRq: Request[IO]): BackendETIO[Msg_BackendAreaInfo] = {
 		import JsonDecoders_BackendAreaInfo._
-		val opName: String = "better-fetchAreaInfoOrError"
+		val opName: String = "fetchAreaInfo"
 		val areaResultIO: IO[Msg_BackendAreaInfo] = dataSrcCli.expect[Msg_BackendAreaInfo](areaRq)
 		val eitherEff: IO[Either[Throwable, Msg_BackendAreaInfo]] = areaResultIO.attempt
 		val eithT: EitherT[IO, Throwable, Msg_BackendAreaInfo] = EitherT(eitherEff)
 		val areaETIO: BackendETIO[Msg_BackendAreaInfo] = eithT.leftMap(origExc => {
-			DataFetchError(opName, areaRq.toString, origExc)
+			BackendFetchError(opName, areaRq.toString, origExc)
 		})
 		// Design decision:  Make sure that any error gets logged now (as well as delivered as our result).
-		val loggedETIO = areaETIO.leftSemiflatTap((bckErr: OurBackendError) => {
+		val loggedETIO = areaETIO.leftSemiflatTap((bckErr: BackendError) => {
 			IO.blocking {
 				// In general a logging call MIGHT be blocking.
 				getLogger.warn(s"${opName} for ${areaRq.toString} failed with error : ${bckErr.asText}")
@@ -54,10 +54,10 @@ class BackendForecastProviderImpl(dataSrcCli: => Client[IO]) extends BackendFore
 	private def fetchForecastJson(areaInfo : Msg_BackendAreaInfo) : BackendETIO[Json] =  {
 		val opName = "fetchForecastJson"
 		val foreRqIO: IO[Request[IO]] = myRequestBuilder.buildForecastRqIoFromAreaInfo(areaInfo)
-		val fetchJsonOrErr: IO[Either[DataFetchError, Json]] = foreRqIO.flatMap(foreRq => {
+		val fetchJsonOrErr: IO[Either[BackendFetchError, Json]] = foreRqIO.flatMap(foreRq => {
 			import org.http4s.circe._  // Brings generic EntityDecoder[Json] implicits into scope
 			val fetchJsonEff: IO[Json] = dataSrcCli.expect[Json](foreRq)
-			fetchJsonEff.attempt.map(_.left.map(DataFetchError(opName, foreRq.toString, _)))
+			fetchJsonEff.attempt.map(_.left.map(BackendFetchError(opName, foreRq.toString, _)))
 		})
 		EitherT(fetchJsonOrErr)
 	}
@@ -70,7 +70,7 @@ class BackendForecastProviderImpl(dataSrcCli: => Client[IO]) extends BackendFore
 			// TODO: Supply a more useful+efficient summary of the Json in the DataDecodeFailure
 			val jsonFullTxt = forecastJson.toString()
 			// val pre = jsonFullTxt.take(1000)
-			DataDecodeFailure(opName, jsonFullTxt.take(1000), decFail)
+			BackendDecodeFailure(opName, jsonFullTxt.take(1000), decFail)
 		})
 		EitherT.fromEither(prdForeOrDDF)
 	}

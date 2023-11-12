@@ -4,7 +4,7 @@ import cats.data.EitherT
 import cats.effect.IO
 import com.appstract.fpex.weather.api._
 import com.appstract.fpex.weather.api.backend.BackendEffectTypes.BackendETIO
-import com.appstract.fpex.weather.api.backend.{BackendForecastProvider, Msg_BackendPeriodForecast, OurBackendError}
+import com.appstract.fpex.weather.api.backend.{BackendForecastProvider, Msg_BackendPeriodForecast, BackendError}
 import com.appstract.fpex.weather.api.report.{Msg_WeatherError, Msg_WeatherReport, TemperatureClassifier, WeatherReportSupplier}
 import com.appstract.fpex.weather.impl.backend.BackendForecastProviderImpl
 import io.circe.Encoder
@@ -62,7 +62,7 @@ class WeatherReportSupplierImpl(dataSrcCli: => Client[IO]) extends WeatherReport
 		report
 	}
 
-	private def backendErrToWeatherErr(latLonTxt : String, backendErr : OurBackendError) : Msg_WeatherError = {
+	private def backendErrToWeatherErr(latLonTxt : String, backendErr : BackendError) : Msg_WeatherError = {
 		Msg_WeatherError(MTYPE_ERROR, latLonTxt, "BACKEND_ERR", backendErr.asText)
 	}
 

@@ -5,6 +5,8 @@ object TempTypes {
 }
 object TempRangeNames {
 	type TempRangeName = String
+
+	// TODO: Refine using Scala 3 enum!
 	val COLD: TempRangeName = "cold"
 	val MODERATE: TempRangeName = "moderate"
 	val HOT: TempRangeName = "hot"

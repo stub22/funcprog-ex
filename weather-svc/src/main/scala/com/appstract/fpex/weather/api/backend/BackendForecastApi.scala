@@ -24,8 +24,8 @@ import org.http4s.Request
 */
 
 object BackendEffectTypes {
-	type BackendResult[MsgT] = Either[OurBackendError, MsgT]
-	type BackendETIO[MsgT] = EitherT[IO, OurBackendError, MsgT]
+	type BackendResult[MsgT] = Either[BackendError, MsgT]
+	type BackendETIO[MsgT] = EitherT[IO, BackendError, MsgT]
 }
 
 // Internal API trait exposing useful features of the backend forecast service.

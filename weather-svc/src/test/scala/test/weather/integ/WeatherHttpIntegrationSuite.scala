@@ -16,6 +16,7 @@ import org.log4s.Logger
 
 class WeatherHttpIntegrationSuite extends CatsEffectSuite {
 
+	// Marking tests with this tag prevents them from being executed during 'sbt test', as configured in build.sbt.
 	val tagInteg = new munit.Tag("Integration")
 
 	private val myRoutes = new AppWebRoutes {}

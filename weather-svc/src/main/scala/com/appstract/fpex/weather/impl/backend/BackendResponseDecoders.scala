@@ -1,10 +1,24 @@
 package com.appstract.fpex.weather.impl.backend
 
-import com.appstract.fpex.weather.api.backend.Msg_BackendPeriodForecast
+import cats.effect.IO
 import io.circe._
 import io.circe.generic.semiauto.deriveDecoder
+import org.http4s.EntityDecoder
 import org.log4s
 import org.log4s.Logger
+import com.appstract.fpex.weather.api.backend.{Msg_BackendAreaInfo, Msg_BackendAreaProps, Msg_BackendPeriodForecast}
+
+private object JsonDecoders_BackendAreaInfo {
+	// Circe decoder bindings for building Msg_AreaInfo* from JSON tree.
+	// These implicits could instead be defined locally in the BackendForecastProviderImpl,
+	// but Stu chose to share them in this top-level object, following common practice in Scala dev community.
+	import org.http4s.circe.jsonOf
+
+	implicit val areaPropsDecoder: Decoder[Msg_BackendAreaProps] = deriveDecoder[Msg_BackendAreaProps]
+	implicit val areaInfoDecoder: Decoder[Msg_BackendAreaInfo] = deriveDecoder[Msg_BackendAreaInfo]
+	implicit val areaInfoEntityDecoder: EntityDecoder[IO, Msg_BackendAreaInfo] = jsonOf
+}
+
 
 trait PeriodForecastExtractor {
 	/** *
@@ -44,6 +58,7 @@ trait PeriodForecastExtractor {
 		def jsonPeriodDumper = pCurs0.focus.map(_.spaces4).getOrElse({
 			"No json found at period[0]"
 		})
+
 		myLog.info(s"period[0].history: ${pCurs0.history}")
 		if (flg_dumpPeriodJson) {
 			myLog.info(s"period[0].json: ${jsonPeriodDumper}")
@@ -107,4 +122,5 @@ trait PeriodForecastExtractor {
  * "detail": "An unexpected problem has occurred.",
  * "instance": "https://api.weather.gov/requests/1ed872c0"
  * }
+ *
  */
