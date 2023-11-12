@@ -1,7 +1,7 @@
 package com.appstract.fpex.weather.main
 
 import cats.effect.IO
-import com.appstract.fpex.weather.api.{Msg_WeatherError, Msg_WeatherReport, WeatherReportSupplier}
+import com.appstract.fpex.weather.api.report.{Msg_WeatherError, Msg_WeatherReport, WeatherReportSupplier}
 import org.http4s.dsl.io._
 import org.http4s.{HttpRoutes, Response}
 import org.log4s
@@ -45,7 +45,7 @@ trait AppWebRoutes {
 	}
 
 	def weatherOutputMsgToWebResponse(msg : Either[Msg_WeatherError, Msg_WeatherReport]) : IO[Response[IO]] = {
-		import com.appstract.fpex.weather.impl.JsonEncoders_Report._
+		import com.appstract.fpex.weather.impl.report.JsonEncoders_Report._
 		myLog.info(s"weatherOutputMsgToWebResponse is mapping output message ${msg} to HTTP response")
 		msg match {
 			// When we encounter backend errors, our frontend returns HTTP status=OK (200) with a body containing a

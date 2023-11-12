@@ -98,23 +98,11 @@ as well as logging information to our service console.
 
 ### SOURCE FILES OVERVIEW
 
-The server code is implemented in 8 .scala files located in the [com.appstract.fpex.weather](src/main/scala/com/appstract/fpex/weather) package.
+The server code is implemented in subpackages of [com.appstract.fpex.weather](src/main/scala/com/appstract/fpex/weather) package.
 
-We may roughly divide these files into 3 functional groups:
+There are also some preliminary MUnit tests located in the [src/test/scala](src/test/scala/com/appstract/fpex/weather) folder.  
+These include a mix of 'unit' tests and 'integration' tests, as explained in their source files.
 
-#### Web Server : Launch and Request Handling
- * AppMain.scala
- * AppServer.scala
- * AppWebRoutes.scala
-
-#### Backend Data Fetching and Error Handling
- * BackendForecastApi.scala
- * BackendForecastImpl.scala
-
-#### Frontend Weather Report Generation
- * ReporterApi.scala
- * ReporterImpl.scala
- * Temperatures.scala
 
 ### LIBRARIES 
 

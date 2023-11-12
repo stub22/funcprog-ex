@@ -1,8 +1,8 @@
-package com.appstract.fpex.weather.api
+package com.appstract.fpex.weather.api.report
 
 import cats.effect.IO
 
-/*
+/***
 Here is the internal API for the front end of our weather-svc.
 This API is consumed by our web routes.
 

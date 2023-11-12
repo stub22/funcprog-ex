@@ -1,18 +1,22 @@
 val Http4sVersion = "0.23.16"
 val CirceVersion = "0.14.3"
 val MunitVersion = "0.7.29"
-val LogbackVersion = "1.4.1"    // StuB22 notes:  Logback 1.4.1 requires JDK 11+.
+val LogbackVersion = "1.4.1"    // Note: Logback 1.4.1 requires JDK 11+.
 val MunitCatsEffectVersion = "1.0.6"
+
+val MUnitFramework = new TestFramework("munit.Framework")
 
 // We get a lot of compiler flags from the tpolecat plugin, configured in project/plugins.sbt.
 // Here is one way to disable the -Xfatal-warnings flag:
 Compile / scalacOptions --= Seq("-Xfatal-warnings")
 
+Test / testOptions += Tests.Argument(MUnitFramework, "--exclude-tags=Integration")
+
 lazy val root = (project in file("."))
 	.settings(
 		organization := "com.appstract",
 		name := "weather-svc",
-		version := "0.0.1-SNAPSHOT",
+		version := "0.0.2-SNAPSHOT",
 		scalaVersion := "2.13.9",
 		libraryDependencies ++= Seq(
 			"org.http4s"      %% "http4s-ember-server" % Http4sVersion,

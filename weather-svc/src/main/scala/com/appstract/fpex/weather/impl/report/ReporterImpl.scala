@@ -1,7 +1,10 @@
-package com.appstract.fpex.weather.impl
+package com.appstract.fpex.weather.impl.report
 
 import cats.effect.IO
 import com.appstract.fpex.weather.api._
+import com.appstract.fpex.weather.api.backend.{BackendForecastProvider, Msg_BackendPeriodForecast, OurBackendError}
+import com.appstract.fpex.weather.api.report.{Msg_WeatherError, Msg_WeatherReport, TemperatureInterpreter, WeatherReportSupplier}
+import com.appstract.fpex.weather.impl.backend.BackendForecastProviderImpl
 import io.circe.Encoder
 import io.circe.generic.semiauto.deriveEncoder
 import org.http4s.EntityEncoder

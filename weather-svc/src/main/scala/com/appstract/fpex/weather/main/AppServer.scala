@@ -3,8 +3,8 @@ package com.appstract.fpex.weather.main
 import cats.data.Kleisli
 import cats.effect.IO
 import cats.effect.kernel.Resource
-import com.appstract.fpex.weather.api.WeatherReportSupplier
-import com.appstract.fpex.weather.impl.WeatherReportSupplierImpl
+import com.appstract.fpex.weather.api.report.WeatherReportSupplier
+import com.appstract.fpex.weather.impl.report.WeatherReportSupplierImpl
 import org.http4s.client.Client
 import org.http4s.ember.client.EmberClientBuilder
 import org.http4s.ember.server.EmberServerBuilder

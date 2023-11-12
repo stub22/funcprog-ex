@@ -1,7 +1,7 @@
-package com.appstract.fpex.weather.impl
+package com.appstract.fpex.weather.impl.report
 
-import com.appstract.fpex.weather.api.TempRangeNames._
-import com.appstract.fpex.weather.api.TemperatureInterpreter
+import com.appstract.fpex.weather.api.report.TempRangeNames._
+import com.appstract.fpex.weather.api.report.TemperatureInterpreter
 
 /**
  * This file includes both API and Impl for a feature that interprets temperatures.

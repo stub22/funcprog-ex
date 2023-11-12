@@ -1,19 +1,23 @@
-package com.appstract.fpex.weather
+package test.weather.integ
 
-import munit.CatsEffectSuite
 import cats.effect.{IO, Resource}
-import com.appstract.fpex.weather.api.WeatherReportSupplier
-import com.appstract.fpex.weather.impl.WeatherReportSupplierImpl
+import com.appstract.fpex.weather.api.report.WeatherReportSupplier
+import com.appstract.fpex.weather.impl.report.WeatherReportSupplierImpl
 import com.appstract.fpex.weather.main.AppWebRoutes
-import org.http4s.{HttpRoutes, Method, Request, Response, Status, Uri}
+import munit.CatsEffectSuite
 import org.http4s.client.Client
 import org.http4s.ember.client.EmberClientBuilder
+import org.http4s.{HttpRoutes, Method, Request, Response, Status, Uri}
 import org.log4s
 import org.log4s.Logger
 
 // These are NOT 'unit' tests.
+// These tests attempt to access live http servers.
 
 class WeatherHttpIntegrationSuite extends CatsEffectSuite {
+
+	val tagInteg = new munit.Tag("Integration")
+
 	private val myRoutes = new AppWebRoutes {}
 
 	private val myLog: Logger = log4s.getLogger
@@ -34,11 +38,11 @@ class WeatherHttpIntegrationSuite extends CatsEffectSuite {
 	// TODO:  Explore the boundaries of what is a legitimate lat,lon pair.
 	// TODO:  Consider testing with some randomly generated lat,lon pairs.
 
-	test("check-weather-wquery (for hardcoded latTxt and lonTxt) returns status code 200") {
+	test("check-weather-wquery (for hardcoded latTxt and lonTxt) returns status code 200".tag(tagInteg)) {
 		val weatherUrlPath = mkWqryUrlForLatLong("39.7456", "-97.0892")
 		applyWeatherRouteAndAssertStatusOK(weatherUrlPath)
 	}
-	test("check-weather-wpath (for a sequence hardcoded lat,long pairs) returns status code 200") {
+	test("check-weather-wpath (for a sequence hardcoded lat,long pairs) returns status code 200".tag(tagInteg)) {
 		// Here we sequence several simulated web requests into a single test-case.
 		val latLonTxt_01 = "39.7456,-97.0892"	// Point in Kansas, USA used as an example in api.weather.gov docs.
 		val latLonTxt_02 = "39.7255,-97.4923"	// Random spot sorta close by (also in Kansas).

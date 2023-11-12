@@ -1,4 +1,4 @@
-package com.appstract.fpex.weather.api
+package com.appstract.fpex.weather.api.backend
 
 import cats.data.EitherT
 import cats.effect.IO

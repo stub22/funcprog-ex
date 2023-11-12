@@ -1,14 +1,14 @@
-package com.appstract.fpex.weather.impl
+package com.appstract.fpex.weather.impl.backend
 
 import cats.data.EitherT
 import cats.effect.IO
+import com.appstract.fpex.weather.api._
+import com.appstract.fpex.weather.api.backend.{BackendForecastProvider, Msg_BackendAreaInfo, Msg_BackendPeriodForecast, OldeBackendError}
 import io.circe.Json
+import org.http4s.Request
 import org.http4s.client.Client
-import org.http4s.{Request, Uri}
 import org.log4s
 import org.log4s.Logger
-
-import com.appstract.fpex.weather.api._
 
 class BackendForecastProviderImpl(dataSrcCli: => Client[IO]) extends BackendForecastProvider {
 
