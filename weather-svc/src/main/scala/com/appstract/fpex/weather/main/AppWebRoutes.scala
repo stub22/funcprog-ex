@@ -44,7 +44,7 @@ trait AppWebRoutes {
 		}
 	}
 
-	def weatherOutputMsgToWebResponse(msg : Either[Msg_WeatherError, Msg_WeatherReport]) : IO[Response[IO]] = {
+	private def weatherOutputMsgToWebResponse(msg : Either[Msg_WeatherError, Msg_WeatherReport]) : IO[Response[IO]] = {
 		import com.appstract.fpex.weather.impl.report.JsonEncoders_Report._
 		val outputLogEff = IO.blocking {
 			getLogger.info(s"weatherOutputMsgToWebResponse is mapping output message ${msg} to HTTP response")

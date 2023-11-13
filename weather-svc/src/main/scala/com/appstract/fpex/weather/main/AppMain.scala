@@ -12,10 +12,10 @@ object AppMain extends IOApp.Simple {
 		val appServerBuilder = new AppServerBuilder{}
 		log.debug("AppMain.run: Invoking .makeAppServerIO to build our runnable server effect")
 		val appServerIO: IO[Nothing] = appServerBuilder.makeAppServerIO
-		log.info("AppMain.run built our server IO effect. Now returning it to IOApp to be executed and RUN FOREVER")
+		log.info("AppMain.run built our server IO effect. Now returning it to IOApp to be executed FOREVER")
 		log.info(
 			"""Within a few seconds you should be able to access Weather data from a web browser, using URLS like:
-			| Path argument example
+			|Path argument example
 			|http://localhost:8080/check-weather-wpath/40.2222,-97.0997
 			|
 			|Query param arguments example

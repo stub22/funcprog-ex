@@ -1,8 +1,5 @@
 package com.appstract.fpex.weather.api.report
 
-object TempTypes {
-
-}
 object TempRangeNames {
 	type TempRangeName = String
 
@@ -13,7 +10,7 @@ object TempRangeNames {
 }
 trait TemperatureClassifier {
 	import TempRangeNames.TempRangeName
-	// Assign a descriptive label ("hot", "cold", "moderate") for a given temperature, occurring in either daytime or nightime.
+	// Assign a descriptive label ("hot", "cold", "moderate") for a given temperature, occurring in either daytime or nighttime.
 	def findFahrenheitTempRange(tempF : Float, flg_isDaytime : Boolean) : TempRangeName
 
 	// TODO: Consider adding Celsius API method.

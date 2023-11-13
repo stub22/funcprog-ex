@@ -24,7 +24,6 @@ import org.http4s.Request
 */
 
 object BackendEffectTypes {
-	type BackendResult[MsgT] = Either[BackendError, MsgT]
 	type BackendETIO[MsgT] = EitherT[IO, BackendError, MsgT]
 }
 
@@ -64,4 +63,4 @@ trait BackendForecastProvider {
  * to improve latency and reduce the additional lookup request.
  * This endpoint also tells the application where to
  * find information for issuing office, observation stations, and zones."
- */
+ ***/

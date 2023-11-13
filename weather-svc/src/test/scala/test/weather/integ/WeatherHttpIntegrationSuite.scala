@@ -51,8 +51,8 @@ class WeatherHttpIntegrationSuite extends CatsEffectSuite {
 		// TODO:  Try out more spots on the globe.
 
 		val points = List[String](latLonTxt_01, latLonTxt_02, latLonTxt_03, latLonTxt_04)
-		val urls: List[String] = points.map(mkWpathUrlForLatLong(_))
-		val checkers: List[IO[Unit]] = urls.map(applyWeatherRouteAndAssertResponseStatusOK(_))
+		val urls: List[String] = points.map(mkWpathUrlForLatLong)
+		val checkers: List[IO[Unit]] = urls.map(applyWeatherRouteAndAssertResponseStatusOK)
 
 		// Combine our separate testing effects
 		import cats.implicits._

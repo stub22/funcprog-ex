@@ -35,8 +35,8 @@ class WeatherReportSupplierImpl(dataSrcCli: => Client[IO]) extends WeatherReport
 	private val myInterp : TemperatureClassifier = new TemperClassifierImpl
 
 	override def fetchWeatherForLatLon(latTxt : String, lonTxt : String) : IO[WReportOrErr] = {
-		val logEff = IO.blocking{ getLogger.info(s".fetchWeatherForLatLon(lat=${latTxt}, lon=${lonTxt})") }
 		// TODO:  Validate input values.  On failure, should produce a validation error and prevent any further work.
+		val logEff = IO.blocking{ getLogger.info(s".fetchWeatherForLatLon(lat=${latTxt}, lon=${lonTxt})") }
 		// Concatenate the lat,lon into the same format used by api.weather.gov backend.
 		val latLonPairTxt : LatLonPairTxt= s"${latTxt},${lonTxt}"
 		logEff &> fetchWeatherForLatLonPairTxt(latLonPairTxt)
@@ -55,7 +55,7 @@ class WeatherReportSupplierImpl(dataSrcCli: => Client[IO]) extends WeatherReport
 		val loggedReportIO = wreportIO.flatTap(reportOrErr => IO.blocking {
 			getLogger.info(s".fetchWeatherForLatLonPairTxt made report-or-error : ${reportOrErr}")
 		})
-		wreportIO
+		loggedReportIO
 	}
 
 	private def buildWeatherReport(latLonPairTxt : String, backendForecast : Msg_BackendPeriodForecast) : Msg_WeatherReport  = {

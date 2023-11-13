@@ -35,7 +35,7 @@ trait AppServerBuilder {
 		// Next we make an HttpApp resource, which uses the client.
 		val appRsrc: Resource[IO, HttpApp[IO]] = clientRsrc.map(makeHttpAppWithLogging(_))
 		// Finally we make a runnable Server resource, which uses the HttpApp.
-		val srvrRsrc: Resource[IO, Server] = appRsrc.flatMap(makeServerResourceForHttpApp(_))
+		val srvrRsrc: Resource[IO, Server] = appRsrc.flatMap(makeServerResourceForHttpApp)
 		srvrRsrc
 	}
 
