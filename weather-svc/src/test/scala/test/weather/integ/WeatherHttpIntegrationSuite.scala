@@ -99,7 +99,7 @@ class WeatherHttpIntegrationSuite extends CatsEffectSuite {
 			cli: Client[IO] <- embCliRsrc
 			forecastSupp: WeatherReportSupplier = new WeatherReportSupplierImpl(cli)
 			route: HttpRoutes[IO] = myRoutes.weatherReportRoutes(forecastSupp)
-		} yield(route)
+		} yield (route)
 
 		// When responseIO is eventually run, it will build and use the route just one time, and then release it.
 		val responseIO = routeResource.use(hr => {

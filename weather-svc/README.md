@@ -113,10 +113,13 @@ JSON is encoded+decoded using [circe](https://circe.github.io/circe/).
 Our scala code is based on the [http4s-io](https://github.com/http4s/http4s-io.g8) project template (as of November 2022).
 Our dependencies all came from this template, and have not been modified in our build files.
 
-### Regarding purity and side effects
+### Regarding logging side effects
 
 Our log messages using [log4s](https://github.com/Log4s/log4s) are wrapped in IO.blocking, in most cases.
+
 Some .debug level messages are not wrapped.
+
+Also we note that http4s seems to log HTTP requests + responses directly on its io-compute fibers.
 
 ### CODE STYLE CHOICES
 
