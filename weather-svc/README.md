@@ -35,7 +35,7 @@ Note that these tests do not open up a frontend web service port, but they do ac
 ### ACCESSING THE SERVICE
 
 Our server listens on port 8080.  Changing this port requires modifying the scala code in 
-[AppServer.scala](./src/main/scala/com/appstract/fpex/weather/AppServer.scala) (specifically `AppServerBuilder.makeServerResourceForHttpApp`).
+[AppServer.scala](./src/main/scala/com/appstract/fpex/weather/main/AppServerBuilder.scala) (specifically `AppServerBuilder.makeServerResourceForHttpApp`).
 
 The weather-svc offers two different URL endpoints, which may be accessed using HTTP GET, from a web browser or other HTTP client.
 
@@ -52,7 +52,7 @@ We have not yet attempted to determine how many digits of precision can be suppl
     Query param arguments example
     http://localhost:8080/check-weather-wquery?lat=40.2222&lon=-97.0997
 
-A successful HTTP response will looks this
+A successful HTTP response looks like this:
     
     {"messageType":"WEATHER_REPORT","latLonPairTxt":"39.7451,-97.0997","summary":"Sunny","temperatureDescription":"cold"}
 
@@ -98,23 +98,11 @@ as well as logging information to our service console.
 
 ### SOURCE FILES OVERVIEW
 
-The server code is implemented in 8 .scala files located in the [com.appstract.fpex.weather](src/main/scala/com/appstract/fpex/weather) package.
+The server code is implemented in subpackages of [com.appstract.fpex.weather](src/main/scala/com/appstract/fpex/weather) package.
 
-We may roughly divide these files into 3 functional groups:
+There are also some preliminary MUnit tests located in the [src/test/scala](src/test/scala/test/weather) folder.  
+These include a mix of 'unit' tests and 'integration' tests, as explained in their source files.
 
-#### Web Server : Launch and Request Handling
- * AppMain.scala
- * AppServer.scala
- * AppWebRoutes.scala
-
-#### Backend Data Fetching and Error Handling
- * BackendForecastApi.scala
- * BackendForecastImpl.scala
-
-#### Frontend Weather Report Generation
- * ReporterApi.scala
- * ReporterImpl.scala
- * Temperatures.scala
 
 ### LIBRARIES 
 
@@ -125,17 +113,19 @@ JSON is encoded+decoded using [circe](https://circe.github.io/circe/).
 Our scala code is based on the [http4s-io](https://github.com/http4s/http4s-io.g8) project template (as of November 2022).
 Our dependencies all came from this template, and have not been modified in our build files.
 
-### Regarding Purity
+### Regarding logging side effects
 
-Our scala code is mostly pure in the FP sense, but does use impure logging side-effects via [log4s](https://github.com/Log4s/log4s).
+Our log messages using [log4s](https://github.com/Log4s/log4s) are wrapped in IO.blocking, in most cases.
+
+Some .debug level messages are not wrapped.
+
+Also we note that http4s seems to log HTTP requests + responses directly on its io-compute fibers.
 
 ### CODE STYLE CHOICES
 
  * Limited use of scala wildcard imports.  Usually we try to confine these imports to a narrow scope, such as a particular trait or method.
 
  * Limited use of scala "object" singletons.  No use of the "Companion Object" pattern.
-
- * Preference for explicit typing and invocations over sugary structures like for-comprehensions.  
 
 #### Code Naming Conventions
 
