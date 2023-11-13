@@ -5,22 +5,28 @@ import cats.effect.IO
 import org.http4s.Request
 
 /***
- * Backend weather API docs:
+ * This file defines our internal API for fetching backend weather forecast data.
+ * Our API is closely tied to the sole backend implementation considered, which
+ * uses www.weather.gov.
+ *
+ * Backend weather API docs can be found at:
  * https://www.weather.gov/documentation/services-web-api
- * See our project README.md for more background.
  * Also see quote from weather.gov docs at bottom of this file.
  *
- * Example URL for the "points" service, with lat,long at the end of the PATH (not as query params).
+ * Example URL for the weather.gov "points" service, with lat,long at the end of the PATH (not as query params).
  * https://api.weather.gov/points/39.7456,-97.0892
+ *
  * That service returns JSON describing a chunk of grid area, including a URL for the "gridpoints" service.
  * Result fragment:   { "properties": { "forecast": "https://api.weather.gov/gridpoints/TOP/31,80/forecast"
+ *
  * Accessing the "gridpoints" service returns JSON containing an array of forecast "periods".
  * https://api.weather.gov/gridpoints/TOP/31,80/forecast =>
 	{ "properties": {	 "periods": [   {
 	 			"name": "Tonight",	...  "isDaytime": false,
                 "temperature": 63, "temperatureUnit": "F",  ... "shortForecast": "Cloudy"
- * See more complete Json example at bottom of this source file.
  *
+ * See more complete Json example in the com.appstract.fpex.weather.impl.backend package,
+ * at bottom of the BackendResponseDecoders.scala.
 */
 
 object BackendEffectTypes {
@@ -37,7 +43,6 @@ trait BackendForecastProvider {
 	// This "fetchAndExtractPeriodForecast" method is our primary method for accessing the backend.
 	// SHORTCUT:  latLonTxt is in the comma separated lat-long format used by the backend weather service,
 	// e.g. "39.7456,-97.0892".
-	// Using this idiosyncratic String format
 	def fetchAndExtractPeriodForecast(latLonPairTxt : LatLonPairTxt) : BackendETIO[Msg_BackendPeriodForecast]
 
 	// Expose ability to fetch just the AreaInfo, which is the results from the first stage '/points' service.
