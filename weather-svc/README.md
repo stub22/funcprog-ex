@@ -103,7 +103,6 @@ The server code is implemented in subpackages of [com.appstract.fpex.weather](sr
 There are also some preliminary MUnit tests located in the [src/test/scala](src/test/scala/test/weather) folder.  
 These include a mix of 'unit' tests and 'integration' tests, as explained in their source files.
 
-
 ### LIBRARIES 
 
 This server is implemented using Typelevel [http4s](https://http4s.org/) and [cats-effect](https://typelevel.org/cats-effect/).
@@ -113,13 +112,21 @@ JSON is encoded+decoded using [circe](https://circe.github.io/circe/).
 Our scala code is based on the [http4s-io](https://github.com/http4s/http4s-io.g8) project template (as of November 2022).
 Our dependencies all came from this template, and have not been modified in our build files.
 
-### Regarding logging side effects
+### LOGGING SIDE EFFECTS
 
 Our log messages using [log4s](https://github.com/Log4s/log4s) are wrapped in IO.blocking, in most cases.
 
-Some .debug level messages are not wrapped.
+Some .debug level messages are not wrapped, but in a production environment we would expect these to do nothing.
 
 Also we note that http4s seems to log HTTP requests + responses directly on its io-compute fibers.
+
+#### CODE NAMING CONVENTIONS
+
+ * `Msg_Xyz` : case classes used to hold HTTP responses (serializable to/from JSON) have names starting with `Msg_`.  
+   * We use this pattern for both backend and frontend responses.
+
+ * `JsonEncoder_Xyz` : Json encoding/decoding contexts (using `circe` library) start with `JsonEncoder_` or `JsonDecoder_`
+
 
 ### CODE STYLE CHOICES
 
@@ -127,9 +134,3 @@ Also we note that http4s seems to log HTTP requests + responses directly on its 
 
  * Limited use of scala "object" singletons.  No use of the "Companion Object" pattern.
 
-#### Code Naming Conventions
-
- * `Msg_Xyz` : case classes used to hold HTTP responses have names starting with `Msg_`.  
-   * We use this pattern for both backend and frontend responses.
-
- * `JsonEncoder_Xyz` : Json encoding/decoding contexts (using `circe` library) start with `JsonEncoder_` or `JsonDecoder_`

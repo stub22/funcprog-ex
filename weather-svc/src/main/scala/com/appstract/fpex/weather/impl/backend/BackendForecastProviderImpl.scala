@@ -68,12 +68,12 @@ class BackendForecastProviderImpl(dataSrcCli: => Client[IO]) extends BackendFore
 		val opName = "extractForecastPeriod"
 		val prdForecastOrDecFail: Either[DecodingFailure, Msg_BackendPeriodForecast] =
 				myForecastExtractor.extractFirstPeriodForecast(forecastJson)
-		val prdForeOrDDF = prdForecastOrDecFail.left.map(decFail => {
+		val prdForeOrBDF = prdForecastOrDecFail.left.map(decFail => {
 			// TODO: Supply a more useful+efficient summary of the Json in the BackendDecodeFailure
 			val jsonFullTxt = forecastJson.toString()
 			BackendDecodeFailure(opName, jsonFullTxt.take(1000), decFail)
 		})
-		EitherT.fromEither(prdForeOrDDF)
+		EitherT.fromEither(prdForeOrBDF)
 	}
 }
 

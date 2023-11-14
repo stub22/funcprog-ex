@@ -30,6 +30,8 @@ import org.http4s.Request
 */
 
 object BackendEffectTypes {
+	// The EitherT monad transformer makes it easy to access/xform the cases of an Either wrapped in an IO.
+	// We use the suffix "ETIO" to indicate: EitherT[IO, Failure, Success]
 	type BackendETIO[MsgT] = EitherT[IO, BackendError, MsgT]
 }
 

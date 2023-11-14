@@ -29,18 +29,18 @@ trait AppServerBuilder {
 	}
 
 	private def makeServerResource(): Resource[IO, Server] = {
-		// It's important for the reader to recognize these stages of the server launch.
-		// First we need an HTTP client resource to access backend HTTP services.
+		// Stages of setup to be performed when our serverResource (result of this method) is allocated with '.use':
+		// 1) First we need an HTTP client resource to access backend HTTP services.
 		val clientRsrc: Resource[IO, Client[IO]] = EmberClientBuilder.default[IO].build
-		// Next we make an HttpApp resource, which uses the client.
+		// 2) Next we make an HttpApp resource, which uses the client.
 		val appRsrc: Resource[IO, HttpApp[IO]] = clientRsrc.map(makeHttpAppWithLogging(_))
-		// Finally we make a runnable Server resource, which uses the HttpApp.
+		// 3) Finally we make a runnable Server resource, which uses the HttpApp.
 		val srvrRsrc: Resource[IO, Server] = appRsrc.flatMap(makeServerResourceForHttpApp)
 		srvrRsrc
 	}
 
 
-	// We pass dataSrcCli client as a lazy BY-NAME parameter to each application component that needs it.
+	// We pass dataSrcCli client as a lazy by-name parameter to each application component that needs it.
 	private def makeHttpAppWithLogging(dataSrcCli: => Client[IO]) : HttpApp[IO] = {
 		val routesKleisli = makeAppRoutesKleisli(dataSrcCli)
 		val (flag_logHeaders, flag_logBody) = (true, true)
@@ -48,12 +48,12 @@ trait AppServerBuilder {
 	}
 
 	private def makeAppRoutesKleisli(dataSrcCli: => Client[IO]) : Kleisli[IO, Request[IO], Response[IO]] = {
-		// Heart of our application is defined by the routes we can respond to.
+		// Heart of our application is defined by the HTTP routes we can respond to.
 		val weatherRoutes = new AppWebRoutes{}
 		val forecastSupp : WeatherReportSupplier = new WeatherReportSupplierImpl(dataSrcCli)
 		// These HttpRoutes kleislis may be composed together.
 		val weatherRoutesK: HttpRoutes[IO] = weatherRoutes.weatherReportRoutes(forecastSupp)
-		// .orNotFound completes our route setup with an error handler to generate responses for a bad URL "not found" case.
+		// .orNotFound completes our route setup with an error handler to generate responses for unmatched URLs.
 		val httpRoutesK: Kleisli[IO, Request[IO], Response[IO]] = weatherRoutesK.orNotFound
 		httpRoutesK
 	}
