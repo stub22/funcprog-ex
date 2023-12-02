@@ -10,6 +10,10 @@ val MUnitFramework = new TestFramework("munit.Framework")
 // Here is one way to disable the -Xfatal-warnings flag:
 Compile / scalacOptions --= Seq("-Xfatal-warnings")
 
+Compile / run / fork := true
+Test / parallelExecution := false
+Test / logBuffered := false
+
 Test / testOptions += Tests.Argument(MUnitFramework, "--exclude-tags=Integration")
 
 lazy val root = (project in file("."))
